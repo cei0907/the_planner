@@ -12,6 +12,7 @@
     "dev:web": "npm run dev --workspace @the-planner/web",
     "dev:api": "npm run dev --workspace @the-planner/api",
     "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces"
   },
   "devDependencies": {
