@@ -1,6 +1,7 @@
 import type { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import {
   DomainError,
+  assertValidPlanTimeRange,
   createChildTask,
   findAncestors,
   findDescendantsIncludingSelf,
@@ -58,6 +59,10 @@ export interface UncompleteTaskResult {
 
 export class TaskRepository {
   constructor(private readonly pool: Pool) {}
+
+  async findById(userId: UserId, taskId: TaskId): Promise<TaskSummary> {
+    return this.findSummaryById(userId, taskId);
+  }
 
   async list(userId: UserId, filters: TaskFilters): Promise<TaskSummary[]> {
     const where = ["t.user_id = ?", "t.deleted_at IS NULL"];
@@ -143,8 +148,8 @@ export class TaskRepository {
         input.title,
         input.description,
         input.why,
-        input.targetStartAt,
-        input.targetEndAt,
+        toDbDateTime(input.targetStartAt),
+        toDbDateTime(input.targetEndAt),
       ],
     );
 
@@ -187,8 +192,8 @@ export class TaskRepository {
         child.description,
         child.why,
         child.level,
-        child.targetStartAt,
-        child.targetEndAt,
+        toDbDateTime(child.targetStartAt),
+        toDbDateTime(child.targetEndAt),
       ],
     );
 
@@ -201,7 +206,11 @@ export class TaskRepository {
     taskId: TaskId,
     input: UpdateTaskRequest,
   ): Promise<TaskSummary> {
-    await this.findTaskById(userId, taskId);
+    const current = await this.findTaskById(userId, taskId);
+    assertValidTargetRange(
+      input.targetStartAt === undefined ? current.targetStartAt : input.targetStartAt,
+      input.targetEndAt === undefined ? current.targetEndAt : input.targetEndAt,
+    );
 
     const fields: string[] = [];
     const values: Array<string | number | null> = [];
@@ -211,8 +220,14 @@ export class TaskRepository {
     addField(fields, values, "description", input.description);
     addField(fields, values, "why", input.why);
     addField(fields, values, "status", input.status);
-    addField(fields, values, "target_start_at", input.targetStartAt);
-    addField(fields, values, "target_end_at", input.targetEndAt);
+    addField(fields, values, "target_start_at", toDbDateTime(input.targetStartAt));
+    addField(fields, values, "target_end_at", toDbDateTime(input.targetEndAt));
+
+    if (input.status === "done") {
+      fields.push("completed_at = CURRENT_TIMESTAMP(3)");
+    } else if (input.status === "todo" || input.status === "active") {
+      fields.push("completed_at = NULL");
+    }
 
     if (fields.length > 0) {
       values.push(Number(userId), Number(taskId));
@@ -426,8 +441,8 @@ function toTaskSummary(row: TaskRow): TaskSummary {
     why: row.why,
     level: row.level,
     status: row.status,
-    targetStartAt: row.target_start_at,
-    targetEndAt: row.target_end_at,
+    targetStartAt: fromDbDateTime(row.target_start_at),
+    targetEndAt: fromDbDateTime(row.target_end_at),
     progress: {
       leafTotalCount: row.leaf_total_count ?? 0,
       leafDoneCount: row.leaf_done_count ?? 0,
@@ -441,9 +456,9 @@ function toTask(row: TaskRow): Task {
     ...toTaskSummary(row),
     userId: String(row.user_id),
     priority: row.priority,
-    completedAt: row.completed_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    completedAt: fromDbDateTime(row.completed_at),
+    createdAt: fromDbDateTime(row.created_at) ?? "",
+    updatedAt: fromDbDateTime(row.updated_at) ?? "",
   };
 }
 
@@ -459,4 +474,41 @@ function addField(
 
   fields.push(`${column} = ?`);
   values.push(value);
+}
+
+function toDbDateTime(value: string | null): string | null;
+function toDbDateTime(value: string | null | undefined): string | null | undefined;
+function toDbDateTime(value: string | null | undefined): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  return new Date(value).toISOString().slice(0, 23).replace("T", " ");
+}
+
+function fromDbDateTime(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(`${value.replace(" ", "T")}Z`).toISOString();
+}
+
+function assertValidTargetRange(startAt: string | null, endAt: string | null): void {
+  if (!startAt || !endAt) {
+    return;
+  }
+
+  try {
+    assertValidPlanTimeRange(startAt, endAt);
+  } catch {
+    throw new DomainError(
+      "VALIDATION_ERROR",
+      "targetEndAt must be after targetStartAt.",
+    );
+  }
 }

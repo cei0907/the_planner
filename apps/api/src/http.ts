@@ -38,6 +38,10 @@ function statusForDomainError(code: string): number {
     return 404;
   }
 
+  if (code === "VALIDATION_ERROR") {
+    return 400;
+  }
+
   if (code === "TASK_MAX_DEPTH_EXCEEDED") {
     return 409;
   }

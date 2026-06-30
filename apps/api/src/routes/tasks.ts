@@ -1,10 +1,12 @@
 import { Router } from "express";
 import type { Pool } from "mysql2/promise";
-import type {
-  CreateTaskRequest,
-  TaskStatus,
-  TaskType,
-  UpdateTaskRequest,
+import {
+  DomainError,
+  assertValidPlanTimeRange,
+  type CreateTaskRequest,
+  type TaskStatus,
+  type TaskType,
+  type UpdateTaskRequest,
 } from "@the-planner/shared";
 import { asyncHandler } from "../http";
 import { TaskRepository, type TaskFilters } from "../repositories/task-repository";
@@ -33,6 +35,18 @@ export function createTaskRouter(pool: Pool): Router {
     }),
   );
 
+  router.get(
+    "/:taskId",
+    asyncHandler(async (request, response) => {
+      response.json(
+        await tasks.findById(
+          DEVELOPMENT_USER_ID,
+          requiredTaskId(request.params.taskId),
+        ),
+      );
+    }),
+  );
+
   router.post(
     "/",
     asyncHandler(async (request, response) => {
@@ -50,7 +64,7 @@ export function createTaskRouter(pool: Pool): Router {
     asyncHandler(async (request, response) => {
       const created = await tasks.createChild(
         DEVELOPMENT_USER_ID,
-        requiredParam(request.params.taskId, "taskId"),
+        requiredTaskId(request.params.taskId),
         parseCreateTaskRequest(request.body),
       );
 
@@ -64,7 +78,7 @@ export function createTaskRouter(pool: Pool): Router {
       response.json(
         await tasks.update(
           DEVELOPMENT_USER_ID,
-          requiredParam(request.params.taskId, "taskId"),
+          requiredTaskId(request.params.taskId),
           parseUpdateTaskRequest(request.body),
         ),
       );
@@ -76,7 +90,7 @@ export function createTaskRouter(pool: Pool): Router {
     asyncHandler(async (request, response) => {
       await tasks.deleteSubtree(
         DEVELOPMENT_USER_ID,
-        requiredParam(request.params.taskId, "taskId"),
+        requiredTaskId(request.params.taskId),
       );
       response.status(204).send();
     }),
@@ -88,7 +102,7 @@ export function createTaskRouter(pool: Pool): Router {
       response.json(
         await tasks.completeSubtree(
           DEVELOPMENT_USER_ID,
-          requiredParam(request.params.taskId, "taskId"),
+          requiredTaskId(request.params.taskId),
         ),
       );
     }),
@@ -100,7 +114,7 @@ export function createTaskRouter(pool: Pool): Router {
       response.json(
         await tasks.uncompleteSelfOnly(
           DEVELOPMENT_USER_ID,
-          requiredParam(request.params.taskId, "taskId"),
+          requiredTaskId(request.params.taskId),
         ),
       );
     }),
@@ -109,9 +123,19 @@ export function createTaskRouter(pool: Pool): Router {
   return router;
 }
 
+function requiredTaskId(value: string | string[] | undefined): string {
+  const taskId = requiredParam(value, "taskId");
+
+  if (!/^[1-9]\d*$/.test(taskId)) {
+    throwValidationError("taskId must be a positive integer.");
+  }
+
+  return taskId;
+}
+
 function requiredParam(value: string | string[] | undefined, name: string): string {
   if (typeof value !== "string" || value.trim() === "") {
-    throw new Error(`${name} is required.`);
+    throwValidationError(`${name} is required.`);
   }
 
   return value;
@@ -121,7 +145,13 @@ function parseTaskFilters(query: Record<string, unknown>): TaskFilters {
   const filters: TaskFilters = {};
 
   if (typeof query.parentId === "string") {
-    filters.parentId = query.parentId === "null" ? null : query.parentId;
+    if (query.parentId === "null") {
+      filters.parentId = null;
+    } else if (/^[1-9]\d*$/.test(query.parentId)) {
+      filters.parentId = query.parentId;
+    } else {
+      throwValidationError("parentId must be a positive integer or null.");
+    }
   }
 
   if (isTaskType(query.type)) {
@@ -149,21 +179,25 @@ function parseCreateTaskRequest(body: unknown): CreateTaskRequest {
   const input = asRecord(body);
 
   if (!isTaskType(input.type)) {
-    throw new Error("type must be one of task, project, aspiration.");
+    throwValidationError("type must be one of task, project, aspiration.");
   }
 
   if (typeof input.title !== "string" || input.title.trim() === "") {
-    throw new Error("title is required.");
+    throwValidationError("title is required.");
   }
 
-  return {
+  const request = {
     type: input.type,
-    title: input.title,
+    title: input.title.trim(),
     description: nullableString(input.description),
     why: nullableString(input.why),
-    targetStartAt: nullableString(input.targetStartAt),
-    targetEndAt: nullableString(input.targetEndAt),
+    targetStartAt: nullableDateTime(input.targetStartAt, "targetStartAt"),
+    targetEndAt: nullableDateTime(input.targetEndAt, "targetEndAt"),
   };
+
+  assertValidTargetRange(request.targetStartAt, request.targetEndAt);
+
+  return request;
 }
 
 function parseUpdateTaskRequest(body: unknown): UpdateTaskRequest {
@@ -172,16 +206,16 @@ function parseUpdateTaskRequest(body: unknown): UpdateTaskRequest {
 
   if ("type" in input) {
     if (!isTaskType(input.type)) {
-      throw new Error("type must be one of task, project, aspiration.");
+      throwValidationError("type must be one of task, project, aspiration.");
     }
     result.type = input.type;
   }
 
   if ("title" in input) {
     if (typeof input.title !== "string" || input.title.trim() === "") {
-      throw new Error("title must be a non-empty string.");
+      throwValidationError("title must be a non-empty string.");
     }
-    result.title = input.title;
+    result.title = input.title.trim();
   }
 
   if ("description" in input) {
@@ -194,25 +228,27 @@ function parseUpdateTaskRequest(body: unknown): UpdateTaskRequest {
 
   if ("status" in input) {
     if (!isTaskStatus(input.status)) {
-      throw new Error("status must be one of todo, active, done.");
+      throwValidationError("status must be one of todo, active, done.");
     }
     result.status = input.status;
   }
 
   if ("targetStartAt" in input) {
-    result.targetStartAt = nullableString(input.targetStartAt);
+    result.targetStartAt = nullableDateTime(input.targetStartAt, "targetStartAt");
   }
 
   if ("targetEndAt" in input) {
-    result.targetEndAt = nullableString(input.targetEndAt);
+    result.targetEndAt = nullableDateTime(input.targetEndAt, "targetEndAt");
   }
+
+  assertValidPartialTargetRange(result.targetStartAt, result.targetEndAt);
 
   return result;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Request body must be an object.");
+    throwValidationError("Request body must be an object.");
   }
 
   return value as Record<string, unknown>;
@@ -224,10 +260,24 @@ function nullableString(value: unknown): string | null {
   }
 
   if (typeof value !== "string") {
-    throw new Error("Expected string or null.");
+    throwValidationError("Expected string or null.");
   }
 
-  return value;
+  return value.trim() === "" ? null : value;
+}
+
+function nullableDateTime(value: unknown, fieldName: string): string | null {
+  const dateTime = nullableString(value);
+
+  if (!dateTime) {
+    return null;
+  }
+
+  if (Number.isNaN(Date.parse(dateTime))) {
+    throwValidationError(`${fieldName} must be a valid date-time string.`);
+  }
+
+  return new Date(dateTime).toISOString();
 }
 
 function isTaskType(value: unknown): value is TaskType {
@@ -236,4 +286,31 @@ function isTaskType(value: unknown): value is TaskType {
 
 function isTaskStatus(value: unknown): value is TaskStatus {
   return value === "todo" || value === "active" || value === "done";
+}
+
+function assertValidTargetRange(startAt: string | null, endAt: string | null): void {
+  if (!startAt || !endAt) {
+    return;
+  }
+
+  try {
+    assertValidPlanTimeRange(startAt, endAt);
+  } catch {
+    throwValidationError("targetEndAt must be after targetStartAt.");
+  }
+}
+
+function assertValidPartialTargetRange(
+  startAt: string | null | undefined,
+  endAt: string | null | undefined,
+): void {
+  if (startAt === undefined || endAt === undefined) {
+    return;
+  }
+
+  assertValidTargetRange(startAt, endAt);
+}
+
+function throwValidationError(message: string): never {
+  throw new DomainError("VALIDATION_ERROR", message);
 }
