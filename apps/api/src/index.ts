@@ -4,6 +4,11 @@ import { TASK_MAX_LEVEL } from "@the-planner/shared";
 import { loadConfig } from "./config";
 import { checkDatabaseHealth, ensureDevelopmentUser, getPool } from "./db";
 import { errorHandler } from "./http";
+import {
+  createPlanRouter,
+  createPlanSupplyRouter,
+  createPlanTaskRouter,
+} from "./routes/plans";
 import { createTaskRouter } from "./routes/tasks";
 
 const app = express();
@@ -26,6 +31,9 @@ app.get("/api/health", async (_request, response) => {
 
 if (pool) {
   app.use("/api/tasks", createTaskRouter(pool));
+  app.use("/api/plans", createPlanRouter(pool));
+  app.use("/api/plan-tasks", createPlanTaskRouter(pool));
+  app.use("/api/plan-supplies", createPlanSupplyRouter(pool));
 }
 
 app.use(errorHandler);

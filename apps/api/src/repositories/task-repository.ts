@@ -16,6 +16,7 @@ import {
   type UpdateTaskRequest,
   type UserId,
 } from "@the-planner/shared";
+import { fromDbDateTime, toDbDateTime } from "./date-time";
 
 interface TaskRow extends RowDataPacket {
   id: number;
@@ -474,28 +475,6 @@ function addField(
 
   fields.push(`${column} = ?`);
   values.push(value);
-}
-
-function toDbDateTime(value: string | null): string | null;
-function toDbDateTime(value: string | null | undefined): string | null | undefined;
-function toDbDateTime(value: string | null | undefined): string | null | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (value === null) {
-    return null;
-  }
-
-  return new Date(value).toISOString().slice(0, 23).replace("T", " ");
-}
-
-function fromDbDateTime(value: string | null): string | null {
-  if (!value) {
-    return null;
-  }
-
-  return new Date(`${value.replace(" ", "T")}Z`).toISOString();
 }
 
 function assertValidTargetRange(startAt: string | null, endAt: string | null): void {
