@@ -4,6 +4,14 @@ The Planner uses MariaDB for the API database.
 
 ## Local setup
 
+MariaDB can be started from the workspace after the local data directory is initialized:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-mariadb.ps1
+```
+
+Keep that terminal open while using the local database. Open another terminal for client commands.
+
 Create a database and user first:
 
 ```sql
@@ -16,7 +24,8 @@ FLUSH PRIVILEGES;
 Apply the initial schema:
 
 ```powershell
-mysql -u the_planner -p the_planner < apps/api/db/migrations/0001_initial_schema.sql
+& "C:\Program Files\MariaDB 12.3\bin\mariadb.exe" --ssl=0 -h 127.0.0.1 -P 3306 -u the_planner -pchange-me the_planner
+SOURCE D:/The Plan/apps/api/db/migrations/0001_initial_schema.sql;
 ```
 
 ## Schema rules
