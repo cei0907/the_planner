@@ -19,10 +19,29 @@ export function getPool(databaseUrl: string | null): mysql.Pool | null {
       waitForConnections: true,
       connectionLimit: 10,
       enableKeepAlive: true,
+      dateStrings: true,
     });
   }
 
   return pool;
+}
+
+export async function ensureDevelopmentUser(databaseUrl: string | null): Promise<void> {
+  const database = getPool(databaseUrl);
+
+  if (!database) {
+    return;
+  }
+
+  await database.execute(
+    `
+      INSERT INTO users (id, email, password_hash, display_name)
+      VALUES (1, 'me@example.com', 'dev-password-hash', 'Me')
+      ON DUPLICATE KEY UPDATE
+        email = VALUES(email),
+        display_name = VALUES(display_name)
+    `,
+  );
 }
 
 export async function checkDatabaseHealth(databaseUrl: string | null): Promise<DatabaseHealth> {
