@@ -236,6 +236,7 @@ h4 {
 .task-panel,
 .detail-panel,
 .plan-panel,
+.month-panel,
 .compose-panel {
   padding: 18px;
 }
@@ -243,6 +244,10 @@ h4 {
 .task-panel,
 .plan-panel {
   min-height: 520px;
+}
+
+.month-panel {
+  grid-column: 1 / -1;
 }
 
 .compose-panel {
@@ -409,6 +414,63 @@ h4 {
   padding: 12px;
   border-radius: 8px;
   background: #fff7ed;
+}
+
+.month-weekdays,
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.month-weekdays {
+  margin-top: 14px;
+}
+
+.month-weekdays span {
+  color: #697586;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.month-grid {
+  margin-top: 8px;
+}
+
+.month-day {
+  display: grid;
+  align-content: space-between;
+  justify-items: start;
+  min-height: 76px;
+  padding: 10px;
+  border: 1px solid #edf1f5;
+  color: #182230;
+  background: #fbfcfd;
+}
+
+.month-day:hover,
+.month-day.selected {
+  border-color: #82b8bf;
+  background: #eef8f9;
+}
+
+.month-day.muted {
+  color: #9aa4b2;
+  background: #f8fafc;
+}
+
+.month-day strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #25636f;
+  font-size: 12px;
 }
 
 .plan-tabs {

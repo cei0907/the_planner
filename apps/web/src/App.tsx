@@ -14,8 +14,9 @@ import {
 } from "@the-planner/shared";
 import { requestJson } from "./api";
 import { ComposePanel } from "./compose";
-import { dayRange, getTodayInputDate, toDateTimeInput, toIsoDateTime } from "./date";
+import { dayRange, getTodayInputDate, monthRange, toDateTimeInput, toIsoDateTime } from "./date";
 import { AppLayout } from "./layout";
+import { MonthPanel } from "./month";
 import { PlanPanel } from "./plan";
 import { flattenTasks, TaskDetailPanel, TaskPanel } from "./task";
 import type { ApiState, PlanEditFormState, PlanFormState, SupplyFormState, TaskEditFormState, TaskFormState } from "./types";
@@ -60,6 +61,7 @@ export function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TaskTreeNode[]>([]);
   const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const [monthPlans, setMonthPlans] = useState<PlanSummary[]>([]);
   const [selectedDate, setSelectedDate] = useState(getTodayInputDate);
   const [selectedTaskId, setSelectedTaskId] = useState<TaskId | "">("");
   const [selectedPlanId, setSelectedPlanId] = useState<string | "">("");
@@ -113,8 +115,23 @@ export function App() {
     }
   }
 
+  async function loadMonthPlans(dateInput = selectedDate): Promise<void> {
+    try {
+      const range = monthRange(dateInput);
+      const planList = await requestJson<ListResponse<PlanSummary>>(
+        `/plans?from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`,
+      );
+
+      setMonthPlans(planList.items);
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "월간 Plan을 불러오지 못했습니다.");
+    }
+  }
+
   useEffect(() => {
     void loadWorkspace(selectedDate);
+    void loadMonthPlans(selectedDate);
   }, [selectedDate]);
 
   useEffect(() => {
@@ -196,6 +213,7 @@ export function App() {
         why: "",
       }));
       await loadWorkspace();
+      await loadMonthPlans();
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Task를 만들지 못했습니다.");
@@ -222,6 +240,7 @@ export function App() {
         body: JSON.stringify(payload),
       });
       await loadWorkspace();
+      await loadMonthPlans();
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Task를 수정하지 못했습니다.");
@@ -240,6 +259,7 @@ export function App() {
         method: "POST",
       });
       await loadWorkspace();
+      await loadMonthPlans();
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Task 완료 상태를 바꾸지 못했습니다.");
@@ -302,6 +322,7 @@ export function App() {
         estimatedCost: "",
       }));
       await loadWorkspace(newSelectedDate);
+      await loadMonthPlans(newSelectedDate);
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Plan을 만들지 못했습니다.");
@@ -335,6 +356,7 @@ export function App() {
       setSelectedDate(newSelectedDate);
       setSelectedPlanId(plan.id);
       await loadWorkspace(newSelectedDate);
+      await loadMonthPlans(newSelectedDate);
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Plan을 수정하지 못했습니다.");
@@ -357,6 +379,7 @@ export function App() {
       });
       setSelectedPlanId("");
       await loadWorkspace();
+      await loadMonthPlans();
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Plan을 삭제하지 못했습니다.");
@@ -374,6 +397,7 @@ export function App() {
         body: JSON.stringify({ taskId: selectedCandidateId }),
       });
       await loadWorkspace();
+      await loadMonthPlans();
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Task를 Plan에 배치하지 못했습니다.");
@@ -388,6 +412,7 @@ export function App() {
         method: "POST",
       });
       await loadWorkspace();
+      await loadMonthPlans();
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "PlanTask 상태를 바꾸지 못했습니다.");
@@ -400,6 +425,7 @@ export function App() {
         method: "DELETE",
       });
       await loadWorkspace();
+      await loadMonthPlans();
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Plan에서 Task를 제거하지 못했습니다.");
@@ -420,6 +446,7 @@ export function App() {
       });
       setSupplyForm({ title: "" });
       await loadWorkspace();
+      await loadMonthPlans();
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "준비물을 추가하지 못했습니다.");
@@ -433,6 +460,7 @@ export function App() {
         body: JSON.stringify({ isChecked: !supply.isChecked }),
       });
       await loadWorkspace();
+      await loadMonthPlans();
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "준비물 체크 상태를 바꾸지 못했습니다.");
@@ -450,6 +478,7 @@ export function App() {
         body: JSON.stringify({ title: title.trim() }),
       });
       await loadWorkspace();
+      await loadMonthPlans();
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "준비물 이름을 수정하지 못했습니다.");
@@ -473,9 +502,17 @@ export function App() {
       status={status}
       errorMessage={errorMessage}
       selectedDate={selectedDate}
-      onRefresh={() => void loadWorkspace()}
+      onRefresh={() => {
+        void loadWorkspace();
+        void loadMonthPlans();
+      }}
       onDateChange={setSelectedDate}
     >
+      <MonthPanel
+        selectedDate={selectedDate}
+        plans={monthPlans}
+        onSelectDate={setSelectedDate}
+      />
       <TaskPanel
         tasks={tasks}
         flatTasks={flatTasks}

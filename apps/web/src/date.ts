@@ -27,6 +27,24 @@ export function dayRange(dateInput: string): { from: string; to: string } {
   };
 }
 
+export function monthRange(dateInput: string): { from: string; to: string } {
+  const date = new Date(`${dateInput}T00:00:00`);
+  const from = new Date(date.getFullYear(), date.getMonth(), 1);
+  const to = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+  };
+}
+
+export function toInputDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function toIsoDateTime(inputValue: string): string {
   return new Date(inputValue).toISOString();
 }

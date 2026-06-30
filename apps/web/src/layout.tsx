@@ -42,6 +42,7 @@ export function AppLayout({
         </div>
 
         <nav className="nav-tabs" aria-label="Workspace">
+          <a href="#month">Month</a>
           <a href="#tasks">Task Tree</a>
           <a href="#plans">Today Plan</a>
           <a href="#compose">Create</a>
