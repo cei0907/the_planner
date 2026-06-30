@@ -3,11 +3,13 @@ import {
   type CreatePlanRequest,
   type CreateTaskRequest,
   type ListResponse,
+  type PlanSupplySummary,
   type PlanSummary,
   type PlanTaskSummary,
   type TaskCandidate,
   type TaskId,
   type TaskTreeNode,
+  type UpdatePlanRequest,
   type UpdateTaskRequest,
 } from "@the-planner/shared";
 import { requestJson } from "./api";
@@ -16,7 +18,7 @@ import { dayRange, getTodayInputDate, toDateTimeInput, toIsoDateTime } from "./d
 import { AppLayout } from "./layout";
 import { PlanPanel } from "./plan";
 import { flattenTasks, TaskDetailPanel, TaskPanel } from "./task";
-import type { ApiState, PlanFormState, SupplyFormState, TaskEditFormState, TaskFormState } from "./types";
+import type { ApiState, PlanEditFormState, PlanFormState, SupplyFormState, TaskEditFormState, TaskFormState } from "./types";
 
 function createDefaultPlanForm(): PlanFormState {
   const start = new Date();
@@ -31,6 +33,25 @@ function createDefaultPlanForm(): PlanFormState {
     location: "",
     memo: "",
     estimatedCost: "",
+  };
+}
+
+function toPlanEditForm(plan: PlanSummary | null): PlanEditFormState {
+  if (!plan) {
+    return {
+      ...createDefaultPlanForm(),
+      actualCost: "",
+    };
+  }
+
+  return {
+    title: plan.title,
+    startAt: toDateTimeInput(new Date(plan.startAt)),
+    endAt: toDateTimeInput(new Date(plan.endAt)),
+    location: plan.location ?? "",
+    memo: plan.memo ?? "",
+    estimatedCost: plan.estimatedCost ?? "",
+    actualCost: plan.actualCost ?? "",
   };
 }
 
@@ -58,6 +79,7 @@ export function App() {
     why: "",
   });
   const [planForm, setPlanForm] = useState<PlanFormState>(createDefaultPlanForm);
+  const [planEditForm, setPlanEditForm] = useState<PlanEditFormState>(() => toPlanEditForm(null));
   const [supplyForm, setSupplyForm] = useState<SupplyFormState>({ title: "" });
 
   const flatTasks = useMemo(() => flattenTasks(tasks), [tasks]);
@@ -131,6 +153,10 @@ export function App() {
         setSelectedCandidateId("");
         setErrorMessage(error instanceof Error ? error.message : "Task 후보를 불러오지 못했습니다.");
       });
+  }, [selectedPlan?.id]);
+
+  useEffect(() => {
+    setPlanEditForm(toPlanEditForm(selectedPlan));
   }, [selectedPlan?.id]);
 
   async function handleCreateTask(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -282,6 +308,61 @@ export function App() {
     }
   }
 
+  async function handleUpdatePlan(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+
+    if (!selectedPlan || !planEditForm.title.trim()) {
+      return;
+    }
+
+    const payload: UpdatePlanRequest = {
+      title: planEditForm.title.trim(),
+      startAt: toIsoDateTime(planEditForm.startAt),
+      endAt: toIsoDateTime(planEditForm.endAt),
+      location: planEditForm.location.trim() || null,
+      memo: planEditForm.memo.trim() || null,
+      estimatedCost: planEditForm.estimatedCost.trim() || null,
+      actualCost: planEditForm.actualCost.trim() || null,
+    };
+
+    try {
+      const plan = await requestJson<PlanSummary>(`/plans/${selectedPlan.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      const newSelectedDate = planEditForm.startAt.slice(0, 10);
+
+      setSelectedDate(newSelectedDate);
+      setSelectedPlanId(plan.id);
+      await loadWorkspace(newSelectedDate);
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "Plan을 수정하지 못했습니다.");
+    }
+  }
+
+  async function handleDeletePlan(): Promise<void> {
+    if (!selectedPlan) {
+      return;
+    }
+
+    const confirmed = window.confirm(`"${selectedPlan.title}" Plan을 삭제할까요? 연결된 Task와 준비물도 Plan에서 함께 제거됩니다.`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await requestJson(`/plans/${selectedPlan.id}`, {
+        method: "DELETE",
+      });
+      setSelectedPlanId("");
+      await loadWorkspace();
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "Plan을 삭제하지 못했습니다.");
+    }
+  }
+
   async function handleAddCandidate(): Promise<void> {
     if (!selectedPlan || !selectedCandidateId) {
       return;
@@ -313,6 +394,18 @@ export function App() {
     }
   }
 
+  async function handleRemovePlanTask(planTask: PlanTaskSummary): Promise<void> {
+    try {
+      await requestJson(`/plan-tasks/${planTask.planTaskId}`, {
+        method: "DELETE",
+      });
+      await loadWorkspace();
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "Plan에서 Task를 제거하지 못했습니다.");
+    }
+  }
+
   async function handleAddSupply(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
@@ -330,6 +423,48 @@ export function App() {
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "준비물을 추가하지 못했습니다.");
+    }
+  }
+
+  async function handleToggleSupply(supply: PlanSupplySummary): Promise<void> {
+    try {
+      await requestJson(`/plan-supplies/${supply.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ isChecked: !supply.isChecked }),
+      });
+      await loadWorkspace();
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "준비물 체크 상태를 바꾸지 못했습니다.");
+    }
+  }
+
+  async function handleRenameSupply(supply: PlanSupplySummary, title: string): Promise<void> {
+    if (!title.trim()) {
+      return;
+    }
+
+    try {
+      await requestJson(`/plan-supplies/${supply.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ title: title.trim() }),
+      });
+      await loadWorkspace();
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "준비물 이름을 수정하지 못했습니다.");
+    }
+  }
+
+  async function handleDeleteSupply(supply: PlanSupplySummary): Promise<void> {
+    try {
+      await requestJson(`/plan-supplies/${supply.id}`, {
+        method: "DELETE",
+      });
+      await loadWorkspace();
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "준비물을 삭제하지 못했습니다.");
     }
   }
 
@@ -358,15 +493,23 @@ export function App() {
       <PlanPanel
         plans={plans}
         selectedPlan={selectedPlan}
+        planEditForm={planEditForm}
         selectedCandidateId={selectedCandidateId}
         candidates={candidates}
         supplyForm={supplyForm}
         onSelectPlan={setSelectedPlanId}
+        onPlanEditFormChange={setPlanEditForm}
+        onUpdatePlan={(event) => void handleUpdatePlan(event)}
+        onDeletePlan={() => void handleDeletePlan()}
         onSelectCandidate={setSelectedCandidateId}
         onAddCandidate={() => void handleAddCandidate()}
         onTogglePlanTask={(planTask) => void handleTogglePlanTask(planTask)}
+        onRemovePlanTask={(planTask) => void handleRemovePlanTask(planTask)}
         onSupplyFormChange={setSupplyForm}
         onAddSupply={(event) => void handleAddSupply(event)}
+        onToggleSupply={(supply) => void handleToggleSupply(supply)}
+        onRenameSupply={(supply, title) => void handleRenameSupply(supply, title)}
+        onDeleteSupply={(supply) => void handleDeleteSupply(supply)}
       />
       <ComposePanel
         flatTasks={flatTasks}

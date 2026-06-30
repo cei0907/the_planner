@@ -453,6 +453,15 @@ h4 {
   margin-top: 16px;
 }
 
+.plan-edit-form {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #edf1f5;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
 .plan-summary {
   display: flex;
   align-items: center;
@@ -484,6 +493,10 @@ h4 {
 }
 
 .check-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  align-items: center;
+  gap: 8px;
   min-height: 46px;
   border: 1px solid #edf1f5;
   border-radius: 8px;
@@ -515,8 +528,18 @@ h4 {
 
 .empty-row {
   display: flex;
+  grid-column: 1 / -1;
   align-items: center;
   padding: 0 12px;
+}
+
+.icon-text-button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #cfd8e3;
+  color: #526070;
+  background: #ffffff;
+  font-size: 12px;
 }
 
 .inline-controls {
@@ -526,12 +549,19 @@ h4 {
 }
 
 .supply-list li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 64px;
   align-items: center;
   gap: 8px;
   min-height: 34px;
   color: #526070;
   font-size: 14px;
+}
+
+.supply-list input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+  accent-color: #25636f;
 }
 
 .forms-grid {

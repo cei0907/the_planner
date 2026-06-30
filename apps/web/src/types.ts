@@ -26,6 +26,10 @@ export interface PlanFormState {
   estimatedCost: string;
 }
 
+export interface PlanEditFormState extends PlanFormState {
+  actualCost: string;
+}
+
 export interface SupplyFormState {
   title: string;
 }
