@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Planner DB Schema & API Contract</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --paper: rgba(255, 255, 255, 0.82);
+      --ink: #172033;
+      --muted: #667085;
+      --line: rgba(102, 112, 133, 0.24);
+      --accent: #2f6f73;
+      --accent-soft: #dcefed;
+      --warm: #b9824b;
+      --warm-soft: #f4e7d6;
+      --code-bg: #142033;
+      --code-ink: #e8eef7;
+      --shadow: 0 18px 55px rgba(36, 50, 75, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Pretendard", "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      line-height: 1.72;
+      background:
+        linear-gradient(135deg, rgba(47, 111, 115, 0.12), transparent 30%),
+        linear-gradient(315deg, rgba(185, 130, 75, 0.16), transparent 34%),
+        var(--bg);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 28px;
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    nav {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    nav strong {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 15px;
+    }
+
+    nav a {
+      display: block;
+      padding: 7px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    nav a:hover {
+      color: var(--accent);
+    }
+
+    .hero,
+    section {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: 0 12px 38px rgba(36, 50, 75, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero {
+      min-height: 42vh;
+      display: grid;
+      align-content: end;
+      padding: 44px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.58)),
+        radial-gradient(circle at 18% 12%, rgba(47, 111, 115, 0.2), transparent 34%),
+        radial-gradient(circle at 88% 24%, rgba(185, 130, 75, 0.22), transparent 30%);
+    }
+
+    section {
+      margin-top: 28px;
+      padding: 30px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    h1 {
+      max-width: 840px;
+      margin: 0;
+      font-size: clamp(34px, 6vw, 64px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: 28px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+      line-height: 1.35;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 0;
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 5px 0;
+    }
+
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(23, 32, 51, 0.08);
+      color: #243b53;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      overflow: auto;
+      margin: 14px 0 0;
+      padding: 18px;
+      border-radius: var(--radius);
+      background: var(--code-bg);
+      color: var(--code-ink);
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.58;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    .subtitle {
+      max-width: 780px;
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .step {
+      margin-top: 10px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--warm);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      background: var(--warm-soft);
+    }
+
+    @media (max-width: 920px) {
+      .shell {
+        display: block;
+        padding: 18px;
+      }
+
+      nav {
+        position: static;
+        max-height: none;
+        margin-bottom: 18px;
+      }
+
+      .hero,
+      section {
+        padding: 24px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav aria-label="문서 목차">
+      <strong>DB & API</strong>
+      <a href="#principles">1. 설계 원칙</a>
+      <a href="#tables">2. 핵심 테이블</a>
+      <a href="#queries">3. 핵심 조회</a>
+      <a href="#api">4. API 그룹</a>
+      <a href="#endpoints">5. 대표 엔드포인트</a>
+      <a href="#errors">6. 에러 규칙</a>
+    </nav>
+
+    <main>
+      <header class="hero">
+        <p class="eyebrow">Implementation Specification</p>
+        <h1>DB Schema & API Contract</h1>
+        <p class="subtitle">
+          The Planner MVP 구현을 위한 MariaDB 스키마와 REST API 계약 요약 문서다.
+          원본은 <code>docs/06-database-schema.md</code>, <code>docs/07-api-contract.md</code>다.
+        </p>
+      </header>
+
+      <section id="principles">
+        <h2>1. 설계 원칙</h2>
+        <ol>
+          <li>모든 사용자 소유 데이터는 <code>user_id</code>를 가진다.</li>
+          <li>Task와 Plan은 분리한다.</li>
+          <li>Plan은 완료 상태를 가지지 않는다.</li>
+          <li>Plan 화면의 체크 상태는 <code>plan_tasks</code>에 저장한다.</li>
+          <li>Task Tree는 MVP에서 adjacency list 방식, 즉 <code>tasks.parent_id</code>로 표현한다.</li>
+          <li>진행률은 Leaf 기준 집계값으로 저장한다.</li>
+          <li>반복은 Task에 직접 넣지 않고 <code>repeat_rules</code>로 분리한다.</li>
+        </ol>
+      </section>
+
+      <section id="tables">
+        <h2>2. 핵심 테이블</h2>
+        <div class="grid">
+          <article class="card">
+            <strong>users</strong>
+            <p>단일 사용자 로그인부터 시작하되, 추후 팀 기능을 고려한다.</p>
+          </article>
+          <article class="card">
+            <strong>tasks</strong>
+            <p>Task Tree, Task Type, 목표 기간, 완료 상태를 관리한다.</p>
+          </article>
+          <article class="card">
+            <strong>task_progress</strong>
+            <p>Leaf 기준 진행률 집계값을 저장한다.</p>
+          </article>
+          <article class="card">
+            <strong>plans</strong>
+            <p>시간 슬롯과 장소, 메모, 비용 같은 현장성 정보를 관리한다. 완료 상태는 없다.</p>
+          </article>
+          <article class="card">
+            <strong>plan_tasks</strong>
+            <p>Plan에 연결된 Task와 Plan 화면 체크 상태를 관리한다.</p>
+          </article>
+          <article class="card">
+            <strong>plan_supplies</strong>
+            <p>Plan에 필요한 준비물 체크리스트를 관리한다.</p>
+          </article>
+          <article class="card">
+            <strong>repeat_rules</strong>
+            <p>반복 주기와 종료 조건을 관리한다.</p>
+          </article>
+          <article class="card">
+            <strong>repeat_occurrences</strong>
+            <p>반복으로 생성된 개별 회차를 관리한다.</p>
+          </article>
+        </div>
+
+        <h3>Plan 테이블 금지 필드</h3>
+        <pre><code>plans 테이블에는 다음 필드를 두지 않는다.
+
+is_done
+status
+completed_at</code></pre>
+      </section>
+
+      <section id="queries">
+        <h2>3. 핵심 조회</h2>
+        <h3>특정 기간의 Plan 조회</h3>
+        <pre><code>SELECT *
+FROM plans
+WHERE user_id = ?
+  AND deleted_at IS NULL
+  AND start_at &lt; ?
+  AND end_at &gt; ?
+ORDER BY start_at ASC;</code></pre>
+
+        <h3>Plan에 연결된 Task 조회</h3>
+        <pre><code>SELECT pt.*, t.title, t.type, t.status AS task_status
+FROM plan_tasks pt
+JOIN tasks t ON t.id = pt.task_id
+WHERE pt.plan_id = ?
+ORDER BY pt.id ASC;</code></pre>
+      </section>
+
+      <section id="api">
+        <h2>4. API 그룹</h2>
+        <div class="grid">
+          <article class="card">
+            <strong>Auth</strong>
+            <p>로그인과 현재 사용자 조회.</p>
+          </article>
+          <article class="card">
+            <strong>Task</strong>
+            <p>Task CRUD, Tree 조회, 하위 Task 생성, 완료 전파.</p>
+          </article>
+          <article class="card">
+            <strong>Plan</strong>
+            <p>Plan CRUD, 기간별 조회, 상세 조회.</p>
+          </article>
+          <article class="card">
+            <strong>PlanTask</strong>
+            <p>Plan에 Task 연결, Leaf 자동 펼침, 체크/체크 해제.</p>
+          </article>
+          <article class="card">
+            <strong>PlanSupply</strong>
+            <p>준비물 추가, 수정, 체크, 삭제.</p>
+          </article>
+          <article class="card">
+            <strong>RepeatRule</strong>
+            <p>반복 규칙 생성, 조회, 수정, 삭제.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="endpoints">
+        <h2>5. 대표 엔드포인트</h2>
+        <pre><code>POST   /api/auth/login
+GET    /api/auth/me
+
+GET    /api/tasks
+GET    /api/tasks/tree
+POST   /api/tasks
+POST   /api/tasks/:taskId/children
+PATCH  /api/tasks/:taskId
+DELETE /api/tasks/:taskId
+POST   /api/tasks/:taskId/complete
+POST   /api/tasks/:taskId/uncomplete
+
+GET    /api/plans?from=&to=
+POST   /api/plans
+GET    /api/plans/:planId
+PATCH  /api/plans/:planId
+DELETE /api/plans/:planId
+
+GET    /api/plans/:planId/task-candidates
+POST   /api/plans/:planId/tasks
+POST   /api/plan-tasks/:planTaskId/check
+POST   /api/plan-tasks/:planTaskId/uncheck
+DELETE /api/plan-tasks/:planTaskId
+
+POST   /api/plans/:planId/supplies
+PATCH  /api/plan-supplies/:supplyId
+DELETE /api/plan-supplies/:supplyId
+
+POST   /api/tasks/:taskId/repeat-rules
+GET    /api/tasks/:taskId/repeat-rules
+PATCH  /api/repeat-rules/:repeatRuleId
+DELETE /api/repeat-rules/:repeatRuleId</code></pre>
+
+        <h3>핵심 API 규칙</h3>
+        <ol>
+          <li>Plan을 체크하는 API는 없다.</li>
+          <li>체크 API는 <code>PlanTask</code>를 대상으로 한다.</li>
+          <li>상위 Task를 Plan에 연결하면 하위 Leaf Task들이 PlanTask로 생성된다.</li>
+          <li>Task 완료 API는 자기 자신과 하위 Task 전체에 완료를 전파한다.</li>
+          <li>Task 완료 해제 API는 자기 자신만 미완료 처리한다.</li>
+        </ol>
+      </section>
+
+      <section id="errors">
+        <h2>6. 에러 규칙</h2>
+        <h3>공통 에러 응답</h3>
+        <pre><code>{
+  "error": {
+    "code": "TASK_MAX_DEPTH_EXCEEDED",
+    "message": "Level5 Task cannot have child tasks."
+  }
+}</code></pre>
+
+        <h3>대표 에러 코드</h3>
+        <ul>
+          <li><code>AUTH_INVALID_CREDENTIALS</code></li>
+          <li><code>TASK_NOT_FOUND</code></li>
+          <li><code>TASK_MAX_DEPTH_EXCEEDED</code></li>
+          <li><code>TASK_INVALID_PARENT</code></li>
+          <li><code>PLAN_NOT_FOUND</code></li>
+          <li><code>PLAN_INVALID_TIME_RANGE</code></li>
+          <li><code>PLAN_TASK_NOT_FOUND</code></li>
+          <li><code>REPEAT_RULE_INVALID_END_CONDITION</code></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

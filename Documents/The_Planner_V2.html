@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>인생설계 플래너 앱 기획서 v2 확장판</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --paper: rgba(255, 255, 255, 0.8);
+      --ink: #172033;
+      --muted: #667085;
+      --line: rgba(102, 112, 133, 0.24);
+      --accent: #2f6f73;
+      --accent-soft: #dcefed;
+      --warm: #b9824b;
+      --warm-soft: #f4e7d6;
+      --blue: #486581;
+      --shadow: 0 18px 55px rgba(36, 50, 75, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Pretendard", "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      line-height: 1.72;
+      background:
+        linear-gradient(135deg, rgba(47, 111, 115, 0.12), transparent 32%),
+        linear-gradient(315deg, rgba(185, 130, 75, 0.16), transparent 34%),
+        var(--bg);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 290px minmax(0, 1fr);
+      gap: 28px;
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    nav {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    nav strong {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 15px;
+    }
+
+    nav a {
+      display: block;
+      padding: 7px 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    nav a:hover {
+      color: var(--accent);
+    }
+
+    main {
+      min-width: 0;
+    }
+
+    .hero,
+    section {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: 0 12px 38px rgba(36, 50, 75, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero {
+      min-height: 52vh;
+      display: grid;
+      align-content: end;
+      padding: 44px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.58)),
+        radial-gradient(circle at 18% 12%, rgba(47, 111, 115, 0.2), transparent 34%),
+        radial-gradient(circle at 88% 24%, rgba(185, 130, 75, 0.22), transparent 30%);
+    }
+
+    section {
+      margin-top: 28px;
+      padding: 30px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    h1 {
+      max-width: 800px;
+      margin: 0;
+      font-size: clamp(36px, 7vw, 72px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: 28px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+      line-height: 1.35;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 14px;
+    }
+
+    ul,
+    ol {
+      margin: 10px 0 0;
+      padding-left: 22px;
+    }
+
+    li {
+      margin: 5px 0;
+    }
+
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(23, 32, 51, 0.07);
+      color: #243b53;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 14px;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 14px;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .subtitle {
+      max-width: 780px;
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .quote {
+      margin: 18px 0 0;
+      padding: 18px 20px;
+      border-left: 4px solid var(--accent);
+      background: rgba(220, 239, 237, 0.64);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .card strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .step {
+      margin-top: 10px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--warm);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      background: var(--warm-soft);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 5px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.64);
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 920px) {
+      .shell {
+        display: block;
+        padding: 18px;
+      }
+
+      nav {
+        position: static;
+        max-height: none;
+        margin-bottom: 18px;
+      }
+
+      .hero,
+      section {
+        padding: 24px;
+      }
+
+      .grid,
+      .grid.two {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav aria-label="문서 목차">
+      <strong>기획서 v2 확장판</strong>
+      <a href="#overview">1. 프로젝트 개요</a>
+      <a href="#philosophy">2. 제품 철학</a>
+      <a href="#concepts">3. 핵심 개념</a>
+      <a href="#task">4. Task 설계</a>
+      <a href="#plan">5. Plan 설계</a>
+      <a href="#repeat">6. 반복 설계</a>
+      <a href="#completion">7. 완료와 진행률</a>
+      <a href="#flows">8. 주요 사용 흐름</a>
+      <a href="#screens">9. 화면 구성</a>
+      <a href="#data">10. 데이터 모델 초안</a>
+      <a href="#stack">11. 기술 방향</a>
+      <a href="#mvp">12. MVP 범위</a>
+      <a href="#future">13. 확장 방향</a>
+      <a href="#open">14. 남은 논의</a>
+    </nav>
+
+    <main>
+      <header class="hero">
+        <p class="eyebrow">Life Planning System · 기획서 v2 확장판</p>
+        <h1>인생설계 플래너 앱</h1>
+        <p class="subtitle">
+          큰 지향점과 프로젝트를 Task Tree로 구조화하고, 실제 시간 슬롯인 Plan에 연결해 오늘의 실행으로 내려오게 만드는 개인 플래너 시스템.
+        </p>
+      </header>
+
+      <section id="overview">
+        <h2>1. 프로젝트 개요</h2>
+        <p>
+          이 프로젝트는 단순 Todo 앱이나 일반 캘린더 앱이 아니다. 사용자가 장기적인 지향점, 프로젝트, 할 일을 계층적으로 정리하고, 그것을 실제 시간 슬롯에 배치해 PC, 휴대폰, iPad 등 여러 기기에서 확인하고 수정하고 체크할 수 있게 만드는 인생설계 플래너다.
+        </p>
+        <p>
+          초기 버전부터 멀티디바이스 사용을 전제로 한다. 카페24 VPS 같은 저비용 가상서버에 백엔드와 MariaDB를 두고, 사용자는 PWA 형태로 브라우저에서 접속하거나 홈 화면에 설치해 앱처럼 사용한다.
+        </p>
+        <p>
+          기존 기획서 v1은 Task를 중심으로 연간, 월간, 주간, 일간 배치를 다루었다. v2에서는 대화를 통해 Task와 Plan을 분리한다. Task는 의미와 구조를 담당하고, Plan은 시간과 현장 맥락을 담당한다.
+        </p>
+        <div class="quote">큰 계획이 오늘의 시간으로 내려오는 플래너</div>
+      </section>
+
+      <section id="philosophy">
+        <h2>2. 제품 철학</h2>
+        <p>
+          사람은 먼저 무엇을 하고 싶은지, 왜 해야 하는지를 생각한다. 그리고 나중에 그것을 언제, 어디서, 어떤 조건으로 실행할지 정한다. 이 앱은 그 두 과정을 섞지 않고 분리한 뒤, 필요할 때 다시 연결한다.
+        </p>
+        <div class="grid two">
+          <article class="card">
+            <strong>Task 화면</strong>
+            <p>그 일이 가지는 의미, 목적, 상위 맥락, 하위 구조를 보여준다. Task 화면은 What과 Why를 담당한다.</p>
+          </article>
+          <article class="card">
+            <strong>Plan 화면</strong>
+            <p>그 시간에 해야 할 일, 장소, 준비물, 메모, 비용 같은 실행 맥락을 보여준다. Plan 화면은 When, Where, Context를 담당한다.</p>
+          </article>
+        </div>
+        <p>
+          Plan 화면에서는 그 시간에 해야 할 일을 보여주고, Task 화면에서는 그 일이 의미하는 구조와 방향을 보여준다. 이 분리가 이 시스템의 가장 중요한 설계 원칙이다.
+        </p>
+      </section>
+
+      <section id="concepts">
+        <h2>3. 핵심 개념</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>개념</th>
+              <th>의미</th>
+              <th>역할</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Task</code></td>
+              <td>무엇을 할 것인가</td>
+              <td>목표, 작업, 프로젝트, 지향점을 계층 구조로 관리한다.</td>
+            </tr>
+            <tr>
+              <td><code>Plan</code></td>
+              <td>언제 어디서 실행할 것인가</td>
+              <td>특정 시간 슬롯과 현장성 정보를 관리한다. 자체 완료 상태는 갖지 않는다.</td>
+            </tr>
+            <tr>
+              <td><code>PlanTask</code></td>
+              <td>Plan에 연결된 실행 Task</td>
+              <td>하나의 Plan 안에서 실제로 수행할 Task 목록을 관리한다.</td>
+            </tr>
+            <tr>
+              <td><code>RepeatRule</code></td>
+              <td>반복 배치 규칙</td>
+              <td>반복 Task의 Plan 인스턴스를 생성하거나 관리한다.</td>
+            </tr>
+            <tr>
+              <td><code>Progress</code></td>
+              <td>완료율 집계</td>
+              <td>Leaf Task 기준으로 상위 Task의 진행률을 계산한다.</td>
+            </tr>
+          </tbody>
+        </table>
+        <h3>Task와 Plan의 분리 예시</h3>
+        <p>
+          사용자가 <code>공무원 시험 준비</code>라는 큰 목표를 만든다고 해서, 그 목표 자체가 바로 일정이 되는 것은 아니다. 이 목표는 Task Tree 안에서 의미 구조를 가진다. 이후 사용자는 <code>2026-07-08 09:00~11:00</code> Plan을 만들고, 그 시간 슬롯에 <code>1강 듣기</code>, <code>1강 쉐도잉하기</code> 같은 Leaf Task를 연결한다.
+        </p>
+        <p>
+          반대로 <code>오늘 은행가기</code>처럼 세부 계획이 거의 필요 없는 일은 Level1 Task이면서 동시에 Leaf Task가 될 수 있다. 이 Task를 <code>2026-06-30 14:00~16:00</code> Plan에 연결하면, 별도의 하위 Task 없이 바로 실행 항목이 된다.
+        </p>
+      </section>
+
+      <section id="task">
+        <h2>4. Task 설계</h2>
+        <p>
+          Task는 이 앱의 의미 단위다. Task는 최대 5단계까지 계층 구조를 가질 수 있으며, 각 단계의 이름은 시스템이 강제하지 않는다. 사용자는 큰 지향점부터 작은 실행 항목까지 자유롭게 만들 수 있다.
+        </p>
+        <h3>Task Type</h3>
+        <div class="grid">
+          <article class="card">
+            <strong>할 일 · task</strong>
+            <p>가장 일반적인 실행 항목이다. 단독으로 존재할 수도 있고 프로젝트나 지향점 아래에 속할 수도 있다.</p>
+          </article>
+          <article class="card">
+            <strong>프로젝트 · project</strong>
+            <p>여러 Task를 묶는 목표 단위다. 추후 팀 단위 운영으로 확장될 수 있다.</p>
+          </article>
+          <article class="card">
+            <strong>지향점 · aspiration</strong>
+            <p>아직 실행 구조나 기간이 명확하지 않지만 삶의 방향성과 욕망을 담은 목표다.</p>
+          </article>
+        </div>
+        <h3>Task 주요 속성</h3>
+        <ul>
+          <li>제목, 설명, Why</li>
+          <li>Task Type: <code>task</code>, <code>project</code>, <code>aspiration</code></li>
+          <li>상위 Task, 하위 Task 목록</li>
+          <li>레벨: 1부터 5까지</li>
+          <li>목표 기간: 선택값</li>
+          <li>상태: <code>todo</code>, <code>active</code>, <code>done</code></li>
+          <li>완료 여부</li>
+          <li>중요도와 우선순위</li>
+          <li>반복 여부</li>
+          <li>Leaf 집계값: 전체 Leaf 수, 완료 Leaf 수, 진행률</li>
+        </ul>
+        <h3>Leaf Task 원칙</h3>
+        <p>
+          실제 실행과 체크의 기본 단위는 Leaf Task다. Level1 Task라도 하위 Task가 없다면 Leaf Task가 될 수 있다. 반대로 Level5 Task는 항상 Leaf Task다.
+        </p>
+        <p>
+          상위 Task를 Plan에 배치하면, 시스템은 그 아래의 Leaf Task들을 자동으로 펼쳐 Plan에 추가한다. 상위 Task 자체는 의미 경로로 남고, 실제 실행은 Leaf Task 중심으로 진행한다.
+        </p>
+        <h3>Task Tree 예시</h3>
+        <div class="step">Lv1 프로젝트: 공무원 시험 준비</div>
+        <div class="step">Lv2 할 일 묶음: 영어 공부</div>
+        <div class="step">Lv3 세부 분야: 리스닝</div>
+        <div class="step">Lv4 실행 묶음: 기초 리스닝 강의 듣기</div>
+        <div class="step">Lv5 Leaf Task: 1강 듣기, 1강 쉐도잉하기</div>
+        <p>
+          같은 구조에서 <code>리스닝</code>을 완료 체크하면 <code>기초 리스닝 강의 듣기</code>, <code>1강 듣기</code>, <code>1강 쉐도잉하기</code> 등 모든 하위 Task가 함께 완료 처리된다. 단, 상위 Task의 진행률은 Leaf Task 완료 수를 기준으로 계산한다.
+        </p>
+        <h3>지향점 예시</h3>
+        <p>
+          <code>유럽에서 한 달 살아보기</code> 같은 항목은 당장 일정이나 실행 구조가 정해지지 않았을 수 있다. 이 경우 Task Type을 <code>aspiration</code>으로 두고, Why와 메모를 먼저 기록한다. 나중에 실제 실행 가능성이 생기면 프로젝트로 전환하거나 하위 Task를 추가한다.
+        </p>
+      </section>
+
+      <section id="plan">
+        <h2>5. Plan 설계</h2>
+        <p>
+          Plan은 특정 의미로 잘라낸 시간 슬롯이다. Plan은 완료 체크를 갖지 않는다. 완료는 Task 또는 PlanTask 수행 기록에서 관리한다.
+        </p>
+        <h3>Plan의 역할</h3>
+        <ul>
+          <li>시작 일시와 종료 일시를 가진다.</li>
+          <li>장소, 준비물 체크리스트, 메모, 비용을 가진다.</li>
+          <li>Task 없이 메모성 일정으로 존재할 수 있다.</li>
+          <li>하나 이상의 Task를 연결할 수 있다.</li>
+          <li>Plan 화면에서는 그 시간에 해야 할 일과 현장 정보를 보여준다.</li>
+        </ul>
+        <h3>Plan 현장성 정보</h3>
+        <div class="grid">
+          <article class="card">
+            <strong>장소</strong>
+            <p>실행이 일어나는 위치나 이동 맥락을 기록한다.</p>
+          </article>
+          <article class="card">
+            <strong>준비물 체크리스트</strong>
+            <p>현장에 가기 전 챙겨야 할 물건이나 확인 사항을 관리한다.</p>
+          </article>
+          <article class="card">
+            <strong>메모</strong>
+            <p>상황별 참고 사항, 링크, 약속 내용, 주의점을 자유롭게 기록한다.</p>
+          </article>
+          <article class="card">
+            <strong>비용</strong>
+            <p>예상 비용이나 실제 비용을 기록한다. 추후 장부, 가계부, 이벤트 비용 분석으로 확장할 수 있다.</p>
+          </article>
+        </div>
+        <h3>Plan과 Task 연결 규칙</h3>
+        <ul>
+          <li>Plan은 Task 없이 존재할 수 있다. 예: 치과 예약, 친구와 약속, 단순 메모 일정.</li>
+          <li>Plan은 여러 Task를 가질 수 있다. 예: 여행 준비 Plan 안에 교통편 확인, 짐 챙기기, 예약 확인을 연결.</li>
+          <li>Plan에서 Task를 검색할 때는 Plan 시간 범위와 Task 목표 기간이 겹치는 항목을 우선 노출한다.</li>
+          <li>기간이 없는 지향점이나 Task는 기본 검색에서는 덜 강조하고, 필터로 포함할 수 있게 한다.</li>
+          <li>상위 Task를 선택하면 그 하위 Leaf Task들이 PlanTask로 자동 추가된다.</li>
+        </ul>
+        <h3>장기 시간 슬롯 예시</h3>
+        <p>
+          Plan은 하루 안에 끝나는 일정만 다루지 않는다. <code>월요일 15:30</code>에 시작해 <code>수요일 17:50</code>에 끝나는 일정처럼 여러 날짜를 가로지르는 시간 범위도 표현할 수 있어야 한다. 따라서 Plan은 단순 날짜 필드가 아니라 <code>start_at</code>과 <code>end_at</code>을 기준으로 저장한다.
+        </p>
+      </section>
+
+      <section id="repeat">
+        <h2>6. 반복 설계</h2>
+        <p>
+          사용자는 같은 Task를 여러 시간 슬롯에 배치할 수 있다. 이미 배치된 Task를 다시 배치하려 할 때, 시스템은 반복으로 전환할지 제안할 수 있다. UX에서는 반복 Task처럼 보이지만, 내부 구조는 Task와 RepeatRule을 분리한다.
+        </p>
+        <h3>MVP 반복 규칙</h3>
+        <ul>
+          <li>반복 주기: 매일, 매주, 매월, 매년</li>
+          <li>반복 간격: 1일마다, 2주마다, 3개월마다 등</li>
+          <li>주간 반복의 요일 선택</li>
+          <li>종료 조건: 없음, 특정 날짜까지, N회 반복</li>
+          <li>하위 Task가 있는 Task도 반복 가능</li>
+          <li>하위 Task가 있는 반복 Task는 Plan에 Leaf Task들이 자동 반복 배치됨</li>
+        </ul>
+        <h3>반복 Task 완료 규칙</h3>
+        <div class="step">종료형 반복: N회 반복 또는 종료일이 있는 반복은 모든 회차가 완료되면 원본 Task도 done 처리된다.</div>
+        <div class="step">습관형 반복: 종료 조건이 없는 반복은 원본 Task를 active 상태로 유지한다.</div>
+        <div class="step">원본 Task를 직접 완료하면 남은 회차까지 완료 처리할지 확인한다.</div>
+        <h3>반복 배치 UX</h3>
+        <p>
+          사용자가 이미 Plan에 배치한 Task를 다른 날짜나 시간에 다시 배치하려 하면, 시스템은 반복으로 전환할지 제안한다. 단, 사용자가 원하지 않으면 단순히 별도의 PlanTask로 추가할 수 있다.
+        </p>
+        <div class="quote">이미 배치된 Task입니다. 반복 Task로 설정할까요?</div>
+      </section>
+
+      <section id="completion">
+        <h2>7. 완료와 진행률</h2>
+        <h3>완료 체크 규칙</h3>
+        <ul>
+          <li>Task 완료 체크는 자기 자신과 모든 하위 Task를 done 처리한다.</li>
+          <li>하위 Task가 많은 상위 Task를 완료할 때는 확인 모달을 띄운다.</li>
+          <li>Task 완료 해제는 기본적으로 자기 자신만 미완료로 바꾼다.</li>
+          <li>Plan 자체에는 done check가 없다.</li>
+          <li>PlanTask 완료는 해당 시간 슬롯에서의 수행 기록으로 남는다.</li>
+        </ul>
+        <h3>완료 전파 상세 규칙</h3>
+        <ol>
+          <li>특정 Task를 완료 처리하면 자기 자신은 done 상태가 된다.</li>
+          <li>해당 Task의 모든 하위 Task도 done 상태가 된다.</li>
+          <li>전파 범위는 선택한 Task의 하위 Tree에만 적용된다.</li>
+          <li>형제 Task에는 영향을 주지 않는다.</li>
+          <li>상위 Task의 진행률은 하위 Leaf Task 상태를 기준으로 다시 계산된다.</li>
+          <li>완료 해제는 기본적으로 선택한 Task 자기 자신만 미완료 처리한다.</li>
+          <li>하위 Task까지 해제하는 기능은 추후 선택 옵션으로 확장할 수 있다.</li>
+        </ol>
+        <h3>진행률 계산</h3>
+        <p>
+          상위 Task의 진행률은 Leaf Task 기준으로 계산한다. 즉 <code>완료된 Leaf Task 수 / 전체 Leaf Task 수</code>가 기본 계산식이다.
+        </p>
+        <p>
+          성능을 위해 각 Task는 <code>leaf_total_count</code>, <code>leaf_done_count</code>, <code>progress_rate</code>를 가진다. Leaf Task의 완료 상태가 바뀌면 전체 트리를 다시 계산하지 않고 조상 Task 경로만 위로 갱신한다. 이는 세그먼트 트리식 집계 감각과 비슷하다.
+        </p>
+      </section>
+
+      <section id="flows">
+        <h2>8. 주요 사용 흐름</h2>
+        <h3>시나리오 1: 큰 지향점을 프로젝트로 발전시키기</h3>
+        <p>
+          사용자는 <code>경제적으로 자유로워지기</code>라는 지향점을 만든다. 처음에는 Why와 메모만 기록한다. 시간이 지나 구체적인 실행 의지가 생기면 이를 프로젝트로 전환하고, <code>수입원 만들기</code>, <code>지출 구조 파악</code>, <code>투자 공부</code> 같은 하위 Task를 추가한다.
+        </p>
+        <h3>시나리오 2: 당일치기 여행 준비</h3>
+        <p>
+          사용자는 <code>당일치기 여행</code>이라는 프로젝트를 만들고, 그 아래에 <code>교통편 확인</code>, <code>맛집 후보 정리</code>, <code>카메라 충전</code>, <code>예약 확인</code> 같은 하위 Task를 둔다. 이후 <code>2026-07-04 08:00~22:00</code> Plan을 만들고 이 프로젝트를 연결한다. Plan에는 Leaf Task들이 자동으로 펼쳐진다.
+        </p>
+        <p>
+          이 Plan에는 장소, 준비물, 예상 비용, 메모를 함께 기록한다. 예를 들어 준비물에는 신분증, 보조배터리, 우산이 들어가고, 비용에는 교통비와 식비 예상액이 들어간다.
+        </p>
+        <h3>시나리오 3: 단독 Leaf Task 배치</h3>
+        <p>
+          사용자는 <code>오늘 은행가기</code>라는 Level1 Task를 만든다. 이 Task에는 하위 Task가 없으므로 Leaf Task다. 사용자는 <code>2026-06-30 14:00~16:00</code> Plan을 만들고 이 Task를 연결한다. Plan 화면에서는 은행 위치, 준비물, 메모가 함께 보인다.
+        </p>
+        <h3>시나리오 4: 반복형 운동 Task</h3>
+        <p>
+          사용자는 <code>30일 동안 아침 운동하기</code> Task를 만들고 매일 오전 7시에 반복되도록 설정한다. 반복 종료 조건은 30회다. 각 날짜의 PlanTask를 완료할 때마다 회차 완료 수가 증가하고, 30회가 모두 완료되면 원본 Task도 done 처리된다.
+        </p>
+        <h3>시나리오 5: 습관형 반복 Task</h3>
+        <p>
+          사용자는 <code>매주 일요일 회고하기</code> Task를 만든다. 종료 조건이 없으므로 이 Task는 done으로 끝나는 목표가 아니라 active 상태로 유지되는 습관이다. 앱은 이번 달 수행률, 최근 4주 수행률 같은 방식으로 상태를 보여줄 수 있다.
+        </p>
+      </section>
+
+      <section id="screens">
+        <h2>9. 화면 구성</h2>
+        <h3>Plan 화면</h3>
+        <p>
+          Plan 화면은 연간, 월간, 주간, 일간 단위에 맞는 형태로 제공한다. 월간은 캘린더 형태를 지향하고, 주간과 일간은 시간대별 실행 흐름이 잘 보이게 구성한다.
+        </p>
+        <ul>
+          <li>연간 화면: 큰 계획과 주요 기간을 조망</li>
+          <li>월간 화면: 캘린더 기반 Plan 확인</li>
+          <li>주간 화면: 한 주의 시간 배치와 집중 구간 확인</li>
+          <li>일간 화면: 오늘의 시간 슬롯과 실행 Task 확인</li>
+        </ul>
+        <h3>Task 화면</h3>
+        <p>
+          Task 화면은 시간표가 아니라 의미 구조를 보여준다. 전체 Task Tree, 상위 경로, 하위 Task, 진행률, Why, 목표 기간을 관리한다.
+        </p>
+        <ul>
+          <li>Task Tree 펼치기와 접기</li>
+          <li>하위 Task 생성</li>
+          <li>최대 5단계 깊이 제한</li>
+          <li>Task Type 표시</li>
+          <li>Leaf 기준 진행률 표시</li>
+          <li>상위 Task 완료 시 하위 Task 전체 완료</li>
+        </ul>
+        <h3>Task List 화면</h3>
+        <p>
+          연간, 월간, 주간, 일간 Task 목록을 시간과 별개로 리스트로 볼 수 있게 한다. 이는 기간별 ToDo List 역할을 한다.
+        </p>
+        <h3>모바일과 PC 대응</h3>
+        <p>
+          PC에서는 넓은 화면을 활용해 Task Tree, Plan 상세, 선택된 기간의 목록을 함께 볼 수 있다. 모바일에서는 한 화면에 하나의 목적만 보여준다. 오늘의 Plan, Task 상세, 준비물 체크, 기간 선택 같은 화면을 명확히 분리한다.
+        </p>
+      </section>
+
+      <section id="data">
+        <h2>10. 데이터 모델 초안</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>테이블</th>
+              <th>주요 필드</th>
+              <th>설명</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>users</code></td>
+              <td>id, email, password_hash, display_name</td>
+              <td>초기에는 단일 사용자 로그인을 지원하되, 추후 팀 기능을 고려한다.</td>
+            </tr>
+            <tr>
+              <td><code>tasks</code></td>
+              <td>id, user_id, parent_id, type, title, description, why, level, status, target_start_at, target_end_at</td>
+              <td>Task Tree와 의미 구조를 관리한다.</td>
+            </tr>
+            <tr>
+              <td><code>task_progress</code></td>
+              <td>task_id, leaf_total_count, leaf_done_count, progress_rate</td>
+              <td>Leaf 기준 진행률 집계를 관리한다.</td>
+            </tr>
+            <tr>
+              <td><code>plans</code></td>
+              <td>id, user_id, title, start_at, end_at, location, memo, estimated_cost, actual_cost</td>
+              <td>시간 슬롯과 현장 정보를 관리한다.</td>
+            </tr>
+            <tr>
+              <td><code>plan_tasks</code></td>
+              <td>id, plan_id, task_id, status, completed_at</td>
+              <td>Plan에 연결된 Task와 해당 슬롯의 수행 상태를 관리한다.</td>
+            </tr>
+            <tr>
+              <td><code>plan_supplies</code></td>
+              <td>id, plan_id, title, is_checked</td>
+              <td>Plan별 준비물 체크리스트를 관리한다.</td>
+            </tr>
+            <tr>
+              <td><code>repeat_rules</code></td>
+              <td>id, task_id, frequency, interval_value, weekdays, end_type, end_at, occurrence_count</td>
+              <td>반복 배치 규칙을 관리한다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="stack">
+        <h2>11. 기술 방향</h2>
+        <div class="grid">
+          <article class="card">
+            <strong>Frontend</strong>
+            <p>React 기반 PWA. PC, 휴대폰, iPad에서 브라우저 접속과 홈 화면 설치를 지원한다.</p>
+          </article>
+          <article class="card">
+            <strong>Backend</strong>
+            <p>Node.js와 Express 기반 API. 인증, Task, Plan, 반복, 진행률 계산을 담당한다.</p>
+          </article>
+          <article class="card">
+            <strong>Database</strong>
+            <p>MariaDB. 카페24 VPS 같은 저비용 서버에서 운영 가능하도록 설계한다.</p>
+          </article>
+        </div>
+        <div class="pill-row">
+          <span class="pill">단일 사용자 로그인</span>
+          <span class="pill">PWA 설치</span>
+          <span class="pill">MariaDB</span>
+          <span class="pill">React</span>
+          <span class="pill">Express</span>
+          <span class="pill">5분 단위 UI</span>
+        </div>
+      </section>
+
+      <section id="mvp">
+        <h2>12. MVP 범위</h2>
+        <h3>포함</h3>
+        <ul>
+          <li>단일 사용자 로그인</li>
+          <li>Task 생성, 수정, 삭제</li>
+          <li>Task Type: 할 일, 프로젝트, 지향점</li>
+          <li>최대 5단계 Task Tree</li>
+          <li>상위 Task 완료 시 하위 Task 전체 완료</li>
+          <li>완료 해제 시 자기 자신만 미완료 처리</li>
+          <li>Leaf 기준 진행률 계산</li>
+          <li>Plan 생성, 수정, 삭제</li>
+          <li>Plan에 Task 연결</li>
+          <li>상위 Task를 Plan에 넣을 때 Leaf Task 자동 펼침</li>
+          <li>Plan 현장 정보: 장소, 준비물 체크리스트, 메모, 비용</li>
+          <li>연간, 월간, 주간, 일간 Plan 화면</li>
+          <li>기간별 Task List 화면</li>
+          <li>기본 반복 규칙</li>
+          <li>PWA 기본 지원</li>
+        </ul>
+        <h3>제외</h3>
+        <ul>
+          <li>팀 협업</li>
+          <li>AI 추천</li>
+          <li>실시간 동시 편집</li>
+          <li>고급 권한 관리</li>
+          <li>외부 캘린더 연동</li>
+          <li>복잡한 반복 예외 처리</li>
+          <li>장부와 가계부 기능의 완성형 구현</li>
+        </ul>
+        <h3>개발 순서 제안</h3>
+        <ol>
+          <li>데이터 모델과 MariaDB 스키마 설계</li>
+          <li>로그인과 단일 사용자 인증 구현</li>
+          <li>Task CRUD와 5단계 Tree 구현</li>
+          <li>상위 완료 전파와 Leaf 기준 진행률 구현</li>
+          <li>Plan CRUD와 시간 범위 입력 구현</li>
+          <li>Plan에 Task 연결 및 Leaf 자동 펼침 구현</li>
+          <li>일간 Plan 화면 구현</li>
+          <li>월간 캘린더 화면 구현</li>
+          <li>주간, 연간 화면 확장</li>
+          <li>반복 규칙 구현</li>
+          <li>PWA 설치 지원</li>
+          <li>실제 사용 피드백 기반 개선</li>
+        </ol>
+      </section>
+
+      <section id="future">
+        <h2>13. 확장 방향</h2>
+        <ul>
+          <li>AI 추천: 하위 Task 후보, 준비물, Plan에 어울리는 Task를 추천하되 자동 확정하지 않는다.</li>
+          <li>팀 기능: Project를 팀 단위로 공유하고 역할과 권한을 부여한다.</li>
+          <li>장부 연결: Plan 비용을 Expense 객체로 확장해 이벤트 기반 가계부로 연결한다.</li>
+          <li>오프라인 지원: PWA 캐시와 임시 저장으로 네트워크가 불안정한 상황을 보완한다.</li>
+          <li>통계: 지향점, 프로젝트, 기간별 실행률과 비용 흐름을 시각화한다.</li>
+        </ul>
+      </section>
+
+      <section id="open">
+        <h2>14. 남은 논의</h2>
+        <ul>
+          <li>PlanTask 완료가 원본 Task 완료에 반영되는 정확한 조건</li>
+          <li>반복 회차가 생성되는 시점: 미리 생성할지, 조회 시 가상 생성할지</li>
+          <li>기간 없는 지향점이 검색과 리스트에서 노출되는 기본 방식</li>
+          <li>비용을 단일 금액으로 둘지, 항목별 비용으로 둘지</li>
+          <li>첫 MVP에서 연간 화면을 어느 수준까지 만들지</li>
+        </ul>
+        <p class="note">
+          이 문서는 2026-06-30 대화 내용을 기준으로 기존 PDF 기획서를 v2 구조로 확장 재정리한 것이다. 기존 PDF의 Task 중심 구조를 유지하되, Task와 Plan을 분리하고 반복, 진행률, PWA, MariaDB, 비용 확장성을 추가했다.
+        </p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

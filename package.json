@@ -1,0 +1,21 @@
+{
+  "name": "the-planner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @the-planner/web",
+    "dev:web": "npm run dev --workspace @the-planner/web",
+    "dev:api": "npm run dev --workspace @the-planner/api",
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0"
+  }
+}
