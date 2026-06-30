@@ -192,6 +192,17 @@ h4 {
   background: #ffffff;
 }
 
+.secondary-button {
+  border: 1px solid #cfd8e3;
+  color: #25636f;
+  background: #ffffff;
+}
+
+.danger-button {
+  color: #ffffff;
+  background: #b42318;
+}
+
 .workspace {
   min-width: 0;
   padding: 24px;
@@ -375,6 +386,23 @@ h4 {
 .detail-stack p {
   color: #334155;
   line-height: 1.6;
+}
+
+.edit-grid {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.button-row button {
+  min-width: 96px;
+  padding: 0 14px;
 }
 
 .why-copy {
@@ -566,6 +594,7 @@ h4 {
   .workspace-header,
   .forms-grid,
   .detail-stack dl,
+  .edit-grid,
   .sidebar-footer {
     grid-template-columns: 1fr;
   }

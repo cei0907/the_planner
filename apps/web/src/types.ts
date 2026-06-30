@@ -10,6 +10,13 @@ export interface TaskFormState {
   why: string;
 }
 
+export interface TaskEditFormState {
+  type: TaskType;
+  title: string;
+  description: string;
+  why: string;
+}
+
 export interface PlanFormState {
   title: string;
   startAt: string;

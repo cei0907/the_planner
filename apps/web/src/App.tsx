@@ -8,6 +8,7 @@ import {
   type TaskCandidate,
   type TaskId,
   type TaskTreeNode,
+  type UpdateTaskRequest,
 } from "@the-planner/shared";
 import { requestJson } from "./api";
 import { ComposePanel } from "./compose";
@@ -15,7 +16,7 @@ import { dayRange, getTodayInputDate, toDateTimeInput, toIsoDateTime } from "./d
 import { AppLayout } from "./layout";
 import { PlanPanel } from "./plan";
 import { flattenTasks, TaskDetailPanel, TaskPanel } from "./task";
-import type { ApiState, PlanFormState, SupplyFormState, TaskFormState } from "./types";
+import type { ApiState, PlanFormState, SupplyFormState, TaskEditFormState, TaskFormState } from "./types";
 
 function createDefaultPlanForm(): PlanFormState {
   const start = new Date();
@@ -45,6 +46,12 @@ export function App() {
   const [selectedCandidateId, setSelectedCandidateId] = useState<TaskId | "">("");
   const [taskForm, setTaskForm] = useState<TaskFormState>({
     parentId: "",
+    type: "task",
+    title: "",
+    description: "",
+    why: "",
+  });
+  const [taskEditForm, setTaskEditForm] = useState<TaskEditFormState>({
     type: "task",
     title: "",
     description: "",
@@ -87,6 +94,25 @@ export function App() {
   useEffect(() => {
     void loadWorkspace(selectedDate);
   }, [selectedDate]);
+
+  useEffect(() => {
+    if (!selectedTask) {
+      setTaskEditForm({
+        type: "task",
+        title: "",
+        description: "",
+        why: "",
+      });
+      return;
+    }
+
+    setTaskEditForm({
+      type: selectedTask.type,
+      title: selectedTask.title,
+      description: selectedTask.description ?? "",
+      why: selectedTask.why ?? "",
+    });
+  }, [selectedTask?.id]);
 
   useEffect(() => {
     if (!selectedPlan?.id) {
@@ -147,6 +173,72 @@ export function App() {
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Task를 만들지 못했습니다.");
+    }
+  }
+
+  async function handleUpdateTask(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+
+    if (!selectedTask || !taskEditForm.title.trim()) {
+      return;
+    }
+
+    const payload: UpdateTaskRequest = {
+      type: taskEditForm.type,
+      title: taskEditForm.title.trim(),
+      description: taskEditForm.description.trim() || null,
+      why: taskEditForm.why.trim() || null,
+    };
+
+    try {
+      await requestJson(`/tasks/${selectedTask.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      await loadWorkspace();
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "Task를 수정하지 못했습니다.");
+    }
+  }
+
+  async function handleToggleTaskDone(): Promise<void> {
+    if (!selectedTask) {
+      return;
+    }
+
+    const action = selectedTask.status === "done" ? "uncomplete" : "complete";
+
+    try {
+      await requestJson(`/tasks/${selectedTask.id}/${action}`, {
+        method: "POST",
+      });
+      await loadWorkspace();
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "Task 완료 상태를 바꾸지 못했습니다.");
+    }
+  }
+
+  async function handleDeleteTask(): Promise<void> {
+    if (!selectedTask) {
+      return;
+    }
+
+    const confirmed = window.confirm(`"${selectedTask.title}" Task를 삭제할까요? 하위 Task도 함께 삭제됩니다.`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await requestJson(`/tasks/${selectedTask.id}`, {
+        method: "DELETE",
+      });
+      setSelectedTaskId("");
+      await loadWorkspace();
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(error instanceof Error ? error.message : "Task를 삭제하지 못했습니다.");
     }
   }
 
@@ -255,7 +347,14 @@ export function App() {
         selectedTaskId={selectedTaskId}
         onSelectTask={setSelectedTaskId}
       />
-      <TaskDetailPanel selectedTask={selectedTask} />
+      <TaskDetailPanel
+        selectedTask={selectedTask}
+        editForm={taskEditForm}
+        onEditFormChange={setTaskEditForm}
+        onUpdateTask={(event) => void handleUpdateTask(event)}
+        onToggleTaskDone={() => void handleToggleTaskDone()}
+        onDeleteTask={() => void handleDeleteTask()}
+      />
       <PlanPanel
         plans={plans}
         selectedPlan={selectedPlan}

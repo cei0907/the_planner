@@ -1,4 +1,6 @@
+import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { TASK_MAX_LEVEL, type TaskId, type TaskTreeNode, type TaskType } from "@the-planner/shared";
+import type { TaskEditFormState } from "./types";
 
 export const taskTypeLabels: Record<TaskType, string> = {
   aspiration: "지향점",
@@ -79,7 +81,21 @@ export function TaskPanel({
   );
 }
 
-export function TaskDetailPanel({ selectedTask }: { selectedTask: TaskTreeNode | null }) {
+export function TaskDetailPanel({
+  selectedTask,
+  editForm,
+  onEditFormChange,
+  onUpdateTask,
+  onToggleTaskDone,
+  onDeleteTask,
+}: {
+  selectedTask: TaskTreeNode | null;
+  editForm: TaskEditFormState;
+  onEditFormChange: Dispatch<SetStateAction<TaskEditFormState>>;
+  onUpdateTask: (event: FormEvent<HTMLFormElement>) => void;
+  onToggleTaskDone: () => void;
+  onDeleteTask: () => void;
+}) {
   return (
     <section className="panel detail-panel" aria-labelledby="detail-heading">
       <div className="panel-header">
@@ -91,7 +107,7 @@ export function TaskDetailPanel({ selectedTask }: { selectedTask: TaskTreeNode |
       </div>
 
       {selectedTask ? (
-        <div className="detail-stack">
+        <form className="detail-stack" onSubmit={onUpdateTask}>
           <dl>
             <div>
               <dt>종류</dt>
@@ -108,9 +124,58 @@ export function TaskDetailPanel({ selectedTask }: { selectedTask: TaskTreeNode |
               </dd>
             </div>
           </dl>
-          <p>{selectedTask.description || "설명 없음"}</p>
-          <p className="why-copy">{selectedTask.why || "why 메모 없음"}</p>
-        </div>
+
+          <div className="edit-grid">
+            <label>
+              <span>종류</span>
+              <select
+                value={editForm.type}
+                onChange={(event) => onEditFormChange((current) => ({ ...current, type: event.target.value as TaskType }))}
+              >
+                {taskTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>제목</span>
+              <input
+                value={editForm.title}
+                onChange={(event) => onEditFormChange((current) => ({ ...current, title: event.target.value }))}
+              />
+            </label>
+          </div>
+
+          <label>
+            <span>설명</span>
+            <textarea
+              value={editForm.description}
+              onChange={(event) => onEditFormChange((current) => ({ ...current, description: event.target.value }))}
+              rows={3}
+            />
+          </label>
+
+          <label>
+            <span>Why</span>
+            <textarea
+              value={editForm.why}
+              onChange={(event) => onEditFormChange((current) => ({ ...current, why: event.target.value }))}
+              rows={3}
+            />
+          </label>
+
+          <div className="button-row">
+            <button type="submit">수정 저장</button>
+            <button type="button" className="secondary-button" onClick={onToggleTaskDone}>
+              {selectedTask.status === "done" ? "완료 해제" : "완료"}
+            </button>
+            <button type="button" className="danger-button" onClick={onDeleteTask}>
+              삭제
+            </button>
+          </div>
+        </form>
       ) : (
         <p className="empty-copy">왼쪽에서 Task를 선택하면 상세가 표시됩니다.</p>
       )}
