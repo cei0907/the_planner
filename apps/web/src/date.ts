@@ -1,4 +1,4 @@
-import type { PlanSummary } from "@the-planner/shared";
+﻿import type { PlanSummary } from "@the-planner/shared";
 
 export function getTodayInputDate(): string {
   const now = new Date();
@@ -27,10 +27,36 @@ export function dayRange(dateInput: string): { from: string; to: string } {
   };
 }
 
+export function weekRange(dateInput: string): { from: string; to: string } {
+  const date = new Date(`${dateInput}T00:00:00`);
+  const from = new Date(date);
+  from.setDate(date.getDate() - date.getDay());
+  from.setHours(0, 0, 0, 0);
+
+  const to = new Date(from);
+  to.setDate(from.getDate() + 7);
+
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+  };
+}
+
 export function monthRange(dateInput: string): { from: string; to: string } {
   const date = new Date(`${dateInput}T00:00:00`);
   const from = new Date(date.getFullYear(), date.getMonth(), 1);
   const to = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+  };
+}
+
+export function yearRange(dateInput: string): { from: string; to: string } {
+  const date = new Date(`${dateInput}T00:00:00`);
+  const from = new Date(date.getFullYear(), 0, 1);
+  const to = new Date(date.getFullYear() + 1, 0, 1);
 
   return {
     from: from.toISOString(),
@@ -53,4 +79,13 @@ export function formatTimeRange(plan: Pick<PlanSummary, "startAt" | "endAt">): s
   const start = new Date(plan.startAt);
   const end = new Date(plan.endAt);
   return `${start.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} - ${end.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+export function formatDateLabel(dateInput: string): string {
+  return new Date(`${dateInput}T00:00:00`).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  });
 }
