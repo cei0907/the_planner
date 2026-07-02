@@ -194,36 +194,41 @@ function PlannerTreeNode({
     <div className="planner-tree-node-wrap">
       <button
         type="button"
-        className={`glass-tree-node planner-tree-node ${meta.borderClass}`}
+        className={`glass-tree-node planner-tree-node ${meta.borderClass} ${hasChildren ? "has-toggle" : ""}`}
         onClick={() => onSelect(node.id)}
       >
-        <span className="planner-tree-node-header">
-          <span className="planner-tree-node-left">
-            {hasChildren ? (
-              <span
-                className="toggle-arrow"
-                role="button"
-                tabIndex={0}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggle(node.id);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    onToggle(node.id);
-                  }
-                }}
-              >
-                {node.collapsed ? ">" : "v"}
-              </span>
-            ) : null}
-            <span className={meta.className}>{meta.badge}</span>
+        {hasChildren ? (
+          <span
+            className={`toggle-arrow ${meta.borderClass}`}
+            role="button"
+            tabIndex={0}
+            aria-label={node.collapsed ? "하위 구조 펼치기" : "하위 구조 접기"}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggle(node.id);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                event.stopPropagation();
+                onToggle(node.id);
+              }
+            }}
+          >
+            {node.collapsed ? "▸" : "▾"}
           </span>
-          <span className="planner-tree-id">id:{node.id}</span>
+        ) : null}
+        <span className="planner-tree-node-main">
+          <span className="planner-tree-node-header">
+            <span className="planner-tree-node-left">
+              <span className={meta.className}>{meta.badge}</span>
+            </span>
+            <span className="planner-tree-node-right">
+              <span className="planner-tree-id">id:{node.id}</span>
+            </span>
+          </span>
+          <strong className={node.level === 1 ? "root-title" : ""}>{node.title}</strong>
         </span>
-        <strong className={node.level === 1 ? "root-title" : ""}>{node.title}</strong>
       </button>
 
       {hasChildren && !node.collapsed ? (
