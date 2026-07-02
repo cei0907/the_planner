@@ -3,9 +3,9 @@ import type { PlanSummary, PlanTaskSummary, TaskTreeNode } from "@the-planner/sh
 import { formatDateLabel, formatTimeRange } from "./date";
 import type { PrimaryTab } from "./layout";
 import { examplePlans, exampleTasks } from "./firstScreenExampleData";
-
-type FirstScreenView = "designer" | "focus" | "scheduler";
-type ScheduleSegment = "day" | "week" | "month" | "year";
+import { GlobalTabNav } from "./GlobalTabNav";
+import { PlanBuilderScreen } from "./PlanBuilderScreen";
+import type { FirstScreenView, ScheduleSegment } from "./firstScreenTypes";
 
 interface FocusItem {
   plan: PlanSummary;
@@ -49,8 +49,6 @@ export function FirstScreen({
   const [view, setView] = useState<FirstScreenView>("focus");
   const [queueIndex, setQueueIndex] = useState(0);
   const [scheduleSegment, setScheduleSegment] = useState<ScheduleSegment>("day");
-  const [inboxValue, setInboxValue] = useState("");
-  const [inboxItems, setInboxItems] = useState<string[]>([]);
 
   const displayPlans = plans.length > 0 ? plans : examplePlans;
   const displayTasks = tasks.length > 0 ? tasks : exampleTasks;
@@ -60,7 +58,6 @@ export function FirstScreen({
   );
   const completedCount = displayPlans.reduce((sum, plan) => sum + plan.tasks.filter((task) => task.status === "done").length, 0);
   const totalCount = displayPlans.reduce((sum, plan) => sum + plan.tasks.length, 0);
-  const taskNodes = useMemo(() => flattenNodes(displayTasks).slice(0, 7), [displayTasks]);
   const visibleQueueIndex = focusQueue.length === 0 ? 0 : Math.min(queueIndex, focusQueue.length - 1);
   const focusItem = focusQueue[visibleQueueIndex] ?? null;
   const progress = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
@@ -74,13 +71,6 @@ export function FirstScreen({
   function postponeFocusItem(): void {
     if (focusQueue.length < 2) return;
     setQueueIndex((current) => (current + 1) % focusQueue.length);
-  }
-
-  function addInboxItem(): void {
-    const title = inboxValue.trim();
-    if (!title) return;
-    setInboxItems((items) => [title, ...items].slice(0, 4));
-    setInboxValue("");
   }
 
   return (
@@ -133,50 +123,7 @@ export function FirstScreen({
             </div>
           ) : null}
 
-          {view === "designer" ? (
-            <div className="first-panel designer-panel">
-              <div className="inbox-composer">
-                <label htmlFor="first-inbox">새 조각</label>
-                <div>
-                  <input
-                    id="first-inbox"
-                    value={inboxValue}
-                    onChange={(event) => setInboxValue(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") addInboxItem();
-                    }}
-                    placeholder="생각나는 일을 적기"
-                  />
-                  <button type="button" onClick={addInboxItem}>추가</button>
-                </div>
-              </div>
-
-              <div className="task-tree-preview">
-                {taskNodes.length > 0 ? (
-                  taskNodes.map((task) => (
-                    <button key={task.id} type="button" onClick={() => onTabChange("tasks")} style={{ paddingLeft: `${10 + task.level * 10}px` }}>
-                      <span>{task.level === 1 ? "Lv1" : `Lv${task.level}`}</span>
-                      <strong>{task.title}</strong>
-                      <em>{task.progress.leafDoneCount}/{task.progress.leafTotalCount}</em>
-                    </button>
-                  ))
-                ) : (
-                  <button type="button" onClick={() => onTabChange("write")}>
-                    <span>Inbox</span>
-                    <strong>첫 목표 만들기</strong>
-                    <em>0/0</em>
-                  </button>
-                )}
-                {inboxItems.map((item) => (
-                  <button key={item} type="button" className="new-inbox-item" onClick={() => onTabChange("write")}>
-                    <span>Inbox</span>
-                    <strong>{item}</strong>
-                    <em>new</em>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ) : null}
+          {view === "designer" ? <PlanBuilderScreen /> : null}
 
           {view === "scheduler" ? (
             <div className="first-panel scheduler-panel">
@@ -197,20 +144,7 @@ export function FirstScreen({
           ) : null}
         </div>
 
-        <nav className="first-triad" aria-label="first screen sections">
-          <button type="button" className={view === "designer" ? "active" : ""} onClick={() => setView("designer")}>
-            <span aria-hidden="true">🛠️</span>
-            <strong>계획 만들기</strong>
-          </button>
-          <button type="button" className={view === "focus" ? "active" : ""} onClick={() => setView("focus")}>
-            <span aria-hidden="true">🎯</span>
-            <strong>오늘 집중</strong>
-          </button>
-          <button type="button" className={view === "scheduler" ? "active" : ""} onClick={() => setView("scheduler")}>
-            <span aria-hidden="true">📅</span>
-            <strong>일정 보기</strong>
-          </button>
-        </nav>
+        <GlobalTabNav activeView={view} onViewChange={setView} />
       </div>
     </section>
   );
