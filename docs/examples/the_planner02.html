@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>The Planner - 아키텍처 갱신 명세서</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <!-- Chosen Palette: Tropical Ocean Glassmorphism (Background: #f4f9fc, Accents: #0fb9c9, #2d8fff, Text: #17324d, Glass: rgba(255,255,255,0.4)) -->
+        <!-- Application Structure Plan: 이 SPA는 개발자 자문용 구조적 피드백과 모바일 UI 프로토타입을 결합한 2단 분할 레이아웃 대시보드입니다. 좌측에는 사용자의 지적을 전적으로 수용하여 재설계한 3대 핵심 탭(계획 만들기, 오늘 집중, 계획 보기) 기반의 실동작 모바일 프레임을 배치하고, 우측에는 왜 이 구조가 데이터 아키텍처와 제품 철학을 동시에 만족하는지 증명하는 냉정한 피드백 리포트를 렌더링합니다. 사용자는 페이지 이동 없이 한 화면에서 기획의 실존적 개념을 시각적, 구조적으로 완벽히 이해할 수 있습니다. -->
+        <!-- Visualization & Content Choices: 1. 유저 인터랙션 -> 상시 노출형 하단 글래스 내비게이션 바 구현 -> 제스처 숨김으로 인한 발견 가능성 저하 문제를 완벽히 해결하고 첫 화면에서 즉각적 접근성 확보. 2. 설계(Converter) 뷰 -> 사용자가 제시한 '노래 만들기' 5단계 트리 데이터 구조화 -> 원본 구조와 인박스의 포착 기능 시각화. 3. 조망(Schedule) 뷰 -> test3.html 스타일의 멀티 레이인 캘린더 모형화 -> 일/주/월/년 차원의 선형적 전환 구현 (NO SVG). 4. 피드백 패널 -> 텍스트 블록 및 테이블 레이아웃 -> 공학적이고 날카로운 방향성 제시. -->
+        <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+        <style>
+            body {
+                background: radial-gradient(
+                    circle at 80% 20%,
+                    #eef7fc 0%,
+                    #e3edf7 100%
+                );
+                color: #17324d;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    "Noto Sans KR", sans-serif;
+            }
+            .glass-base {
+                background: rgba(255, 255, 255, 0.35);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.6);
+            }
+            .glass-heavy {
+                background: rgba(255, 255, 255, 0.75);
+                backdrop-filter: blur(30px);
+                -webkit-backdrop-filter: blur(30px);
+                border: 1px solid rgba(255, 255, 255, 0.85);
+                box-shadow:
+                    0 24px 70px rgba(31, 91, 135, 0.18),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            }
+            .tropical-blur-1 {
+                position: absolute;
+                width: 400px;
+                height: 400px;
+                border-radius: 999px;
+                background: linear-gradient(135deg, #70e1e7 0%, #8cc7ff 100%);
+                filter: blur(80px);
+                opacity: 0.35;
+                z-index: -1;
+                top: 10%;
+                left: 5%;
+            }
+            .tropical-blur-2 {
+                position: absolute;
+                width: 500px;
+                height: 500px;
+                border-radius: 999px;
+                background: linear-gradient(135deg, #bca8ff 0%, #8cc7ff 100%);
+                filter: blur(100px);
+                opacity: 0.3;
+                z-index: -1;
+                bottom: 10%;
+                right: 10%;
+            }
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .active-tab-indicator {
+                background: rgba(23, 50, 77, 0.08);
+                border: 1px solid rgba(23, 50, 77, 0.15);
+            }
+            .app-screen {
+                display: none;
+            }
+            .app-screen.active {
+                display: flex;
+            }
+            .chart-container {
+                position: relative;
+                width: 100%;
+                max-width: 340px;
+                margin-left: auto;
+                margin-right: auto;
+                height: 220px;
+                max-height: 260px;
+            }
+
+            /* 산뜻한 열대바다 글래스 트리 전용 스타일 */
+            .glass-tree-node {
+                background: linear-gradient(
+                    135deg,
+                    rgba(255, 255, 255, 0.6) 0%,
+                    rgba(255, 255, 255, 0.2) 100%
+                );
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.7);
+                box-shadow:
+                    0 8px 24px rgba(31, 91, 135, 0.04),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+                transition: all 0.2s ease-in-out;
+            }
+            .glass-tree-node:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 12px 28px rgba(31, 91, 135, 0.08);
+            }
+            .tree-line-branch {
+                border-left: 2px dashed rgba(15, 185, 201, 0.25);
+            }
+
+            /* 하단 액션 바텀 시트 스타일 (스크롤 영역 밖 고정) */
+            .bottom-sheet {
+                transform: translateY(100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .bottom-sheet.open {
+                transform: translateY(0);
+            }
+            
+            /* 백드롭 흐림 및 어둡게 처리 */
+            .sheet-backdrop {
+                background: rgba(23, 50, 77, 0.3);
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
+                opacity: 0;
+                transition: opacity 0.3s ease-in-out;
+            }
+            .sheet-backdrop.open {
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body
+        class="min-h-screen p-4 md:p-8 flex items-center justify-center relative overflow-x-hidden"
+    >
+        <div class="tropical-blur-1"></div>
+        <div class="tropical-blur-2"></div>
+
+        <div
+            class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+        >
+            <div class="lg:col-span-5 flex justify-center">
+                <div
+                    class="relative w-[375px] h-[812px] rounded-[48px] overflow-hidden border-[10px] border-[#17324d] bg-white/10 shadow-2xl flex flex-col justify-between"
+                >
+                    <!-- 디바이스 가변 상단 바 -->
+                    <div
+                        class="absolute top-0 w-full pt-12 px-5 z-20 flex flex-col gap-2"
+                    >
+                        <div class="flex justify-between items-center">
+                            <span
+                                class="text-xs font-black tracking-widest text-[#17324d]/40"
+                                id="top-view-title"
+                                >TODAY FOCUS</span
+                            >
+                            <span
+                                class="w-2 h-2 rounded-full bg-[#0fb9c9] animate-pulse"
+                            ></span>
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex-1 pt-20 pb-24 px-4 overflow-y-auto no-scrollbar flex flex-col relative"
+                    >
+                        <!-- 뷰 1: 오늘 집중 (Focus) -->
+                        <div
+                            id="screen-focus"
+                            class="app-screen active flex-col gap-5 flex-1 justify-center"
+                        >
+                            <div class="w-full text-center mb-2">
+                                <p
+                                    class="text-[13px] text-[#17324d]/60 font-bold"
+                                >
+                                    오늘 밤 슬롯: 수요일 밤 작업
+                                </p>
+                                <div
+                                    class="w-24 h-1 bg-[#17324d]/10 mx-auto mt-2 rounded-full overflow-hidden"
+                                >
+                                    <div
+                                        class="bg-[#2d8fff] h-full w-[33%]"
+                                        id="focus-progress-bar"
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <div
+                                class="glass-heavy rounded-[28px] p-6 flex flex-col justify-between min-h-[340px] border border-white"
+                                id="focus-card-area"
+                            >
+                                <div>
+                                    <span
+                                        class="text-[10px] font-bold text-[#2d8fff] uppercase tracking-wider bg-[#2d8fff]/10 px-2.5 py-1 rounded-md"
+                                        >노래 만들기 &rsaquo; 코드진행</span
+                                    >
+                                    <h3
+                                        class="text-2xl font-black text-[#17324d] mt-4 leading-tight tracking-tight"
+                                        id="focus-task-title"
+                                    >
+                                        곡의 키 정하기
+                                    </h3>
+                                    <p
+                                        class="text-xs text-[#17324d]/60 mt-2 font-medium"
+                                    >
+                                        수행 목표: DAW 진입 전 레퍼런스 곡조
+                                        분해 완료
+                                    </p>
+                                </div>
+                                <div class="flex flex-col gap-2 mt-8">
+                                    <button
+                                        onclick="handleFocusComplete()"
+                                        class="w-full bg-[#17324d] text-white py-3.5 rounded-xl font-bold text-sm tracking-tight active:scale-[0.98] transition-transform shadow-md"
+                                    >
+                                        ✓ 완료 처리
+                                    </button>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button
+                                            onclick="handleFocusPostpone()"
+                                            class="bg-white/60 text-[#17324d] py-3 rounded-xl font-bold text-xs border border-[#17324d]/10 active:scale-[0.97] transition-transform"
+                                        >
+                                            이 시간대 맨뒤로
+                                        </button>
+                                        <button
+                                            onclick="switchView('designer')"
+                                            class="bg-white/60 text-[#0fb9c9] py-3 rounded-xl font-bold text-xs border border-[#0fb9c9]/20 active:scale-[0.97] transition-transform"
+                                        >
+                                            더 작게 쪼개기
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <p
+                                class="text-center text-[11px] text-[#17324d]/50 font-bold"
+                                id="focus-queue-text"
+                            >
+                                이 시간대 계획된 조각 3개 중 1번째 실행 중
+                            </p>
+                        </div>
+
+                        <!-- 뷰 2: 계획 만들기 (Task Tree / Foldable & Contextual) -->
+                        <div
+                            id="screen-designer"
+                            class="app-screen flex-col gap-3 flex-1 h-full"
+                        >
+                            <div class="flex justify-between items-center px-1">
+                                <span
+                                    class="text-[11px] font-bold text-[#17324d]/60 tracking-tight"
+                                    >의미 구조 설계 (터치하여 제어)</span
+                                >
+                                <span
+                                    class="text-[10px] font-bold text-[#2d8fff] bg-[#2d8fff]/10 px-2 py-0.5 rounded"
+                                    >Foldable Tree</span>
+                            </div>
+
+                            <!-- 실시간 JS 연동 동적 트리 컨테이너 -->
+                            <div
+                                class="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-0.5"
+                                id="tree-root-container"
+                                style="max-height: 480px; min-height: 400px;"
+                            >
+                                <!-- JS에서 동적으로 채워집니다. -->
+                            </div>
+
+                            <!-- 전역 루트 Task (Dream) 추가 버튼 -->
+                            <button
+                                onclick="openAddRootModal()"
+                                class="w-full bg-[#17324d]/5 border border-[#17324d]/10 hover:bg-[#17324d]/10 text-[#17324d] font-bold text-xs py-3 rounded-2xl transition-all flex items-center justify-center gap-1 mt-auto"
+                            >
+                                <span>➕ 새로운 최상위 꿈 추가하기</span>
+                            </button>
+                        </div>
+
+                        <!-- 뷰 3: 계획 보기 (Schedule) -->
+                        <div
+                            id="screen-scheduler"
+                            class="app-screen flex-col gap-4 flex-1"
+                        >
+                            <div
+                                class="grid grid-cols-4 gap-1 bg-white/50 p-1 rounded-xl border border-white/80 text-center text-[11px] font-bold"
+                            >
+                                <button
+                                    onclick="switchScheduleSegment('day')"
+                                    id="seg-day"
+                                    class="py-1.5 rounded-lg active-tab-indicator text-[#17324d]"
+                                >
+                                    일간
+                                </button>
+                                <button
+                                    onclick="switchScheduleSegment('week')"
+                                    id="seg-week"
+                                    class="py-1.5 rounded-lg text-[#17324d]/50"
+                                >
+                                    주간
+                                </button>
+                                <button
+                                    onclick="switchScheduleSegment('month')"
+                                    id="seg-month"
+                                    class="py-1.5 rounded-lg text-[#17324d]/50"
+                                >
+                                    월간
+                                </button>
+                                <button
+                                    onclick="switchScheduleSegment('year')"
+                                    id="seg-year"
+                                    class="py-1.5 rounded-lg text-[#17324d]/50"
+                                >
+                                    연간
+                                </button>
+                            </div>
+
+                            <div
+                                class="flex-1 bg-white/30 border border-white/60 rounded-2xl p-3 overflow-y-auto no-scrollbar flex flex-col justify-center min-h-[420px]"
+                                id="schedule-content-area"
+                            >
+                                <div class="space-y-3 w-full">
+                                    <div
+                                        class="border-l-4 border-l-[#2d8fff] bg-white/60 p-3 rounded-r-xl"
+                                    >
+                                        <div
+                                            class="flex justify-between text-[10px] font-bold text-[#2d8fff]"
+                                        >
+                                            <span>09:00 - 12:00</span
+                                            ><span>오전 슬롯</span>
+                                        </div>
+                                        <p
+                                            class="text-xs font-bold text-[#17324d] mt-1"
+                                        >
+                                            개인 루틴 및 메일 점검
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="border-l-4 border-l-[#0fb9c9] bg-white/60 p-3 rounded-r-xl"
+                                    >
+                                        <div
+                                            class="flex justify-between text-[10px] font-bold text-[#0fb9c9]"
+                                        >
+                                            <span>14:00 - 18:00</span
+                                            ><span>오후 슬롯</span>
+                                        </div>
+                                        <p
+                                            class="text-xs font-bold text-[#17324d] mt-1"
+                                        >
+                                            플래너 아키텍처 문서화 작업
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="border-l-4 border-l-[#17324d] bg-white/90 p-3 rounded-r-xl shadow-sm"
+                                    >
+                                        <div
+                                            class="flex justify-between text-[10px] font-bold text-[#17324d]"
+                                        >
+                                            <span>22:00 - 01:00</span
+                                            ><span>야간 슬롯 (현재)</span>
+                                        </div>
+                                        <p
+                                            class="text-xs font-bold text-[#17324d] mt-1"
+                                        >
+                                            수요일 밤 작업: 노래 만들기
+                                        </p>
+                                        <span
+                                            class="text-[9px] font-bold bg-[#17324d]/10 px-1.5 py-0.5 rounded text-[#17324d] inline-block mt-2"
+                                            >담긴 조각: 3개</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- [개선] 스크롤 영역 밖에 고정 배치한 백드롭과 바텀 시트 (z-index 및 레이어 재배치) -->
+                    <div
+                        id="task-sheet-backdrop"
+                        onclick="closeTaskActionSheet()"
+                        class="sheet-backdrop absolute inset-0 z-40"
+                        style="display: none;"
+                    ></div>
+
+                    <div
+                        id="task-action-sheet"
+                        class="bottom-sheet absolute bottom-0 left-0 right-0 glass-heavy rounded-t-[32px] p-6 z-50 border-t border-white/60 flex flex-col gap-4 shadow-xl"
+                        style="display: none;"
+                    >
+                        <div class="w-12 h-1.5 bg-[#17324d]/20 rounded-full mx-auto mb-1"></div>
+                        <div>
+                            <span class="text-[9px] font-bold text-[#2d8fff] tracking-wider bg-[#2d8fff]/10 px-2 py-0.5 rounded-md" id="sheet-task-meta">Lv2 Project</span>
+                            <h3 class="text-lg font-black text-[#17324d] mt-1 tracking-tight" id="sheet-task-title">비트 만들기</h3>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 gap-2">
+                            <button
+                                onclick="triggerAddSubtask()"
+                                id="action-btn-add"
+                                class="w-full bg-[#17324d] text-white font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                            >
+                                <span>➕ 하부 구조 추가하기</span>
+                            </button>
+                            <button
+                                onclick="triggerEditTask()"
+                                class="w-full bg-white/60 border border-[#17324d]/10 text-[#17324d] font-bold py-3.5 rounded-2xl text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                            >
+                                <span>✏️ 이 Task 이름 편집하기</span>
+                            </button>
+                            <button
+                                onclick="closeTaskActionSheet()"
+                                class="w-full bg-white/30 border border-[#17324d]/5 text-[#17324d]/50 font-bold py-3 rounded-2xl text-xs"
+                            >
+                                취소
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 하단 전역 탭 네비게이션 (z-index 조율로 바텀시트 뒤로 격리) -->
+                    <div
+                        class="absolute bottom-5 left-4 right-4 h-16 glass-heavy rounded-2xl border border-white flex items-center justify-around px-2 z-30"
+                    >
+                        <button
+                            onclick="switchView('designer')"
+                            id="nav-designer"
+                            class="flex flex-col items-center justify-center gap-1 flex-1 h-full rounded-xl transition-all text-[#17324d]/50"
+                        >
+                            <span class="text-lg">🛠️</span>
+                            <span class="text-[9px] font-bold">계획 만들기</span>
+                        </button>
+                        <button
+                            onclick="switchView('focus')"
+                            id="nav-focus"
+                            class="flex flex-col items-center justify-center gap-1 flex-1 h-full rounded-xl transition-all active-tab-indicator text-[#17324d]"
+                        >
+                            <span class="text-lg">🎯</span>
+                            <span class="text-[9px] font-bold">오늘 집중</span>
+                        </button>
+                        <button
+                            onclick="switchView('scheduler')"
+                            id="nav-scheduler"
+                            class="flex flex-col items-center justify-center gap-1 flex-1 h-full rounded-xl transition-all text-[#17324d]/50"
+                        >
+                            <span class="text-lg">🗓️</span>
+                            <span class="text-[9px] font-bold">계획 보기</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 우측 영역: 아키텍처 설계 사양 설명서 -->
+            <div class="lg:col-span-7 space-y-6">
+                <div class="glass-heavy rounded-3xl p-6 md:p-8 border border-white">
+                    <span
+                        class="text-xs font-bold tracking-wider uppercase text-[#2d8fff] bg-[#2d8fff]/10 px-3 py-1 rounded-full"
+                        >Architectural Evaluation</span
+                    >
+                    <h2 class="text-3xl font-black text-[#17324d] mt-4 tracking-tight">
+                        제스처 숨김의 한계와 상시 노출형 삼각 축 뷰포트 전환 설계
+                    </h2>
+
+                    <p class="text-sm text-[#17324d]/80 mt-4 leading-relaxed font-medium">
+                        기획자이자 유저로서 지적하신 **"새로운 Task 계획과 스케줄 열람의 상시 접근성 확보"**는 전적으로 정당한 요구사항입니다. 기존 제안이었던 줌 인/아웃 및 풀다운 제스처는 화면을 깨끗하게 유지할 수는 있으나, 하루에도 수십 번 명확한 목적(계획 수정, 일정 파악)을 가지고 앱을 켜는 헤비 유저에게는 치명적인 '기능 발견 차단(UX Barrier)'으로 작용합니다.
+                    </p>
+
+                    <div class="mt-6 border-t border-[#17324d]/10 pt-6 space-y-4">
+                        <h4 class="font-extrabold text-base text-[#17324d] flex items-center gap-2">
+                            <span class="w-1.5 h-3 bg-[#0fb9c9] rounded-full"></span>
+                            동의 및 전면 수정 명세: 삼각 축 제어 패널(Triad persistent bar)
+                        </h4>
+                        <p class="text-xs text-[#17324d]/70 leading-relaxed">
+                            첫 화면 하단에 묵직하고 투명한 **영롱한 글래스 내비게이션 바**를 상시 노출형으로 강제 배치했습니다. 유저는 앱을 켜자마자 0초 만에 자신의 인지 상태에 맞는 완벽한 물리적 전역 진입점을 획득합니다.
+                        </p>
+
+                        <table class="w-full text-left text-xs border-collapse mt-2">
+                            <thead>
+                                <tr class="bg-[#17324d]/5 text-[#17324d]">
+                                    <th class="p-2.5 font-bold rounded-l-lg">핵심 진입점 (Tab)</th>
+                                    <th class="p-2.5 font-bold">유저의 즉각적 심리 상태</th>
+                                    <th class="p-2.5 font-bold rounded-r-lg">데이터 및 화면의 역할</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-[#17324d]/5">
+                                    <td class="p-2.5 font-bold text-[#0fb9c9]">🛠️ 계획 만들기 (Converter)</td>
+                                    <td class="p-2.5 text-[#17324d]/80">"갑자기 좋은 영감이 떠올랐어, 꿈을 조각내고 싶어"</td>
+                                    <td class="p-2.5 text-[#17324d]/70">Task Tree 원본 데이터베이스 핸들링. 인박스 포착 영역 가동.</td>
+                                </tr>
+                                <tr class="border-b border-[#17324d]/5 bg-[#2d8fff]/5">
+                                    <td class="p-2.5 font-bold text-[#2d8fff]">🎯 오늘 집중 (Focus)</td>
+                                    <td class="p-2.5 text-[#17324d]/80">"지금 당장 내가 집중해서 쳐내야 할 조각이 뭐지?"</td>
+                                    <td class="p-2.5 text-[#17324d]/70">현재 시간대 Plan에 배치된 단일 PlanTask 카드 덱 렌더링 (기본 메인).</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2.5 font-bold text-[#17324d]">🗓️ 계획 보기 (Schedule)</td>
+                                    <td class="p-2.5 text-[#17324d]/80">"이번 주, 이번 달 전체 스케줄 흐름을 확인하고 싶어"</td>
+                                    <td class="p-2.5 text-[#17324d]/70">일/주/월/년 세그먼트를 보유한 카드형 캘린더 타임라인 활성화.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-6 bg-[#17324d]/5 rounded-2xl p-4 border border-[#17324d]/10">
+                        <h4 class="text-xs font-bold text-[#17324d] mb-2">&#x1F50E; 날짜 지난 미완료 조각의 처리 규칙 (공학적 고찰)</h4>
+                        <p class="text-[11px] text-[#17324d]/70 leading-relaxed">
+                            귀하가 동의하신 대로, 시간이 경과한 미완료 PlanTask들은 오늘 자 집중(Focus) 카드 덱이나 오늘 자 스케줄 화면에서 **어떠한 자동 이월(Auto-carryover)도 없이 깨끗하게 소거**됩니다. 실패의 기록을 고착화하여 인지적 부하를 차단하되, 좌측 모바일 프레임의 **[계획 만들기]** 탭 내부에 상시 보관되므로 유저는 언제든 안정적으로 구조를 확인하고 다음 시간 영토로 재배치할 수 있는 주도권을 획득합니다.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="glass-heavy rounded-3xl p-6 md:p-8 border border-white flex flex-col md:flex-row gap-6 items-center">
+                    <div class="flex-1">
+                        <span class="text-xs font-bold text-[#0fb9c9] bg-[#0fb9c9]/10 px-2.5 py-1 rounded-md"
+                            >Progress Metrics</span
+                        >
+                        <h3 class="text-xl font-bold mt-2">Leaf Task 기반 데이터 동기화 시스템</h3>
+                        <p class="text-xs text-[#17324d]/70 mt-2 leading-relaxed">
+                            좌측 폰의 <strong>[✓ 완료 처리]</strong> 함수를 작동시키면, 시스템은 즉시 <code>plan_tasks</code>의 상태를 갱신하고, 조상 관계에 있는 상위 Task 트리의 진행률 컬럼(<code>task_progress</code>)을 트리 순회 없이 O(1)에 가깝게 누적 갱신하도록 설계되었습니다.
+                        </p>
+                    </div>
+                    <div class="chart-container w-full md:w-auto flex-shrink-0">
+                        <canvas id="miniProgressChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // 1. 트리 관리를 위한 전역 클라이언트 상태 (Zustand 데이터 구조와 유사)
+            let taskTree = [
+                { id: "0", parentId: null, title: "노래 만들기", level: 1, type: "aspiration", collapsed: false },
+                { id: "00", parentId: "0", title: "비트 만들기", level: 2, type: "project", collapsed: false },
+                { id: "000", parentId: "00", title: "스플라이스 사운드 추출", level: 3, type: "task", collapsed: false },
+                { id: "001", parentId: "00", title: "리듬 배치하기", level: 3, type: "task", collapsed: false },
+                { id: "01", parentId: "0", title: "코드진행 만들기", level: 2, type: "project", collapsed: false },
+                { id: "010", parentId: "01", title: "곡의 키 정하기", level: 3, type: "task", collapsed: false },
+                { id: "011", parentId: "01", title: "반복할 코드 수 정하기", level: 3, type: "task", collapsed: false },
+                { id: "012", parentId: "01", title: "코드 보이싱하기", level: 3, type: "task", collapsed: false }
+            ];
+
+            let selectedTaskIdForAction = null;
+
+            // 2. 트리 동적 렌더링 엔진 (Vanilla JS Recursion)
+            function renderTaskTree() {
+                const container = document.getElementById("tree-root-container");
+                container.innerHTML = ""; // 기존 마크업 초기화
+                
+                // 루트 노드(Lv1) 필터링 및 순차 렌더링
+                const roots = taskTree.filter(t => t.parentId === null);
+                roots.forEach(root => {
+                    container.appendChild(buildTreeNodeDOM(root));
+                });
+            }
+
+            function buildTreeNodeDOM(node) {
+                const wrapper = document.createElement("div");
+                wrapper.className = "flex flex-col gap-1.5 mt-1";
+
+                const children = taskTree.filter(t => t.parentId === node.id);
+                const hasChildren = children.length > 0;
+
+                // 노드 메인 바디 생성
+                const nodeCard = document.createElement("div");
+                // 수준(Level)에 맞춰 테두리 및 뱃지 변주
+                let borderCol = "border-l-4 border-l-[#2d8fff]";
+                let badgeTxt = `Lv1 Dream`;
+                let badgeClass = "text-[#2d8fff] bg-[#2d8fff]/10";
+
+                if (node.level === 2) {
+                    borderCol = "border-l-4 border-l-[#0fb9c9]";
+                    badgeTxt = `Lv2 Project`;
+                    badgeClass = "text-[#0fb9c9] bg-[#0fb9c9]/10";
+                } else if (node.level >= 3) {
+                    borderCol = "border-l-4 border-l-slate-300";
+                    badgeTxt = `Lv${node.level} Task`;
+                    badgeClass = "text-slate-500 bg-slate-100";
+                }
+
+                nodeCard.className = `glass-tree-node rounded-xl p-3 flex flex-col gap-1 ${borderCol}`;
+                
+                let badgeAndIdSection = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-[9px] font-black uppercase tracking-wider ${badgeClass} px-1.5 py-0.5 rounded">${badgeTxt}</span>
+                        <span class="text-[9px] font-mono text-[#17324d]/40 font-bold">id:${node.id}</span>
+                    </div>
+                `;
+
+                nodeCard.innerHTML = `
+                    ${badgeAndIdSection}
+                    <h4 class="text-xs tracking-tight ${node.level === 1 ? 'text-sm font-extrabold' : 'font-semibold'} text-[#17324d] mt-1">
+                        ${hasChildren ? `<span class="toggle-arrow font-bold text-xs pr-1 hover:text-[#2d8fff] transition-colors inline-block select-none">${node.collapsed ? '▶' : '▼'}</span>` : ''}
+                        ${node.title}
+                    </h4>
+                `;
+                
+                // 클릭 이벤트 분리 (화살표 영역 vs 카드 영역)
+                nodeCard.onclick = (e) => {
+                    if (e.target.closest('.toggle-arrow')) {
+                        e.stopPropagation();
+                        node.collapsed = !node.collapsed;
+                        renderTaskTree();
+                    } else {
+                        openTaskActionSheet(node);
+                    }
+                };
+
+                wrapper.appendChild(nodeCard);
+
+                // 자식 브랜치 렌더링 (접히지 않았을 때만)
+                if (hasChildren && !node.collapsed) {
+                    const branch = document.createElement("div");
+                    branch.className = "tree-line-branch ml-3 pl-3 space-y-2";
+                    children.forEach(child => {
+                        branch.appendChild(buildTreeNodeDOM(child));
+                    });
+                    wrapper.appendChild(branch);
+                }
+
+                return wrapper;
+            }
+
+            // 3. 컨텍스츄얼 액션 바텀 시트 트리거 [개선 적용됨]
+            function openTaskActionSheet(node) {
+                selectedTaskIdForAction = node.id;
+                
+                document.getElementById("sheet-task-title").innerText = node.title;
+                
+                const metaBadge = document.getElementById("sheet-task-meta");
+                metaBadge.innerText = `Lv${node.level} ${node.type.toUpperCase()}`;
+
+                // Level 5인 경우 하부 자식 추가 불가능하게 예외 차단
+                const addBtn = document.getElementById("action-btn-add");
+                if (node.level >= 5) {
+                    addBtn.style.opacity = "0.4";
+                    addBtn.setAttribute("disabled", "true");
+                } else {
+                    addBtn.style.opacity = "1";
+                    addBtn.removeAttribute("disabled");
+                }
+
+                // 백드롭 및 바텀시트 활성화
+                const backdrop = document.getElementById("task-sheet-backdrop");
+                const sheet = document.getElementById("task-action-sheet");
+                
+                backdrop.style.display = "block";
+                sheet.style.display = "flex";
+                
+                setTimeout(() => {
+                    backdrop.classList.add("open");
+                    sheet.classList.add("open");
+                }, 10);
+            }
+
+            function closeTaskActionSheet() {
+                const backdrop = document.getElementById("task-sheet-backdrop");
+                const sheet = document.getElementById("task-action-sheet");
+                
+                backdrop.classList.remove("open");
+                sheet.classList.remove("open");
+                
+                setTimeout(() => {
+                    backdrop.style.display = "none";
+                    sheet.style.display = "none";
+                    selectedTaskIdForAction = null;
+                }, 300);
+            }
+
+            // 4. 하부 구조 추가하기 로직
+            function triggerAddSubtask() {
+                if (!selectedTaskIdForAction) return;
+                const parentNode = taskTree.find(t => t.id === selectedTaskIdForAction);
+                if (parentNode.level >= 5) return; // 제한선 체크
+
+                const subtaskTitle = prompt(`[${parentNode.title}] 아래에 생성할 하위 Task 이름을 입력하세요:`);
+                if (subtaskTitle && subtaskTitle.trim() !== "") {
+                    const newId = `${parentNode.id}${Math.floor(Math.random() * 10)}`;
+                    taskTree.push({
+                        id: newId,
+                        parentId: parentNode.id,
+                        title: subtaskTitle.trim(),
+                        level: parentNode.level + 1,
+                        type: "task",
+                        collapsed: false
+                    });
+                    renderTaskTree();
+                }
+                closeTaskActionSheet();
+            }
+
+            // 5. Task 이름 수정하기 로직
+            function triggerEditTask() {
+                if (!selectedTaskIdForAction) return;
+                const targetNode = taskTree.find(t => t.id === selectedTaskIdForAction);
+                
+                const editTitle = prompt("Task 이름을 수정합니다:", targetNode.title);
+                if (editTitle && editTitle.trim() !== "") {
+                    targetNode.title = editTitle.trim();
+                    renderTaskTree();
+                }
+                closeTaskActionSheet();
+            }
+
+            // 6. 새로운 최상위 꿈 추가하기 버튼 (Root node 추가)
+            function openAddRootModal() {
+                const rootTitle = prompt("새로운 최상위 꿈(Aspiration) 이름을 입력하세요:");
+                if (rootTitle && rootTitle.trim() !== "") {
+                    const newId = `${Math.floor(Math.random() * 100)}`;
+                    taskTree.push({
+                        id: newId,
+                        parentId: null,
+                        title: rootTitle.trim(),
+                        level: 1,
+                        type: "aspiration",
+                        collapsed: false
+                    });
+                    renderTaskTree();
+                }
+            }
+
+            // --- 7. '오늘 밤 슬롯' 처리 시퀀스 제어 ---
+            const taskQueue = [
+                {
+                    id: "010",
+                    title: "곡의 키 정하기",
+                    path: "노래 만들기 &rsaquo; 코드진행 만들기",
+                    memo: "수행 목표: DAW 진입 전 레퍼런스 곡조 분해 완료",
+                },
+                {
+                    id: "000",
+                    title: "스플라이스 사운드 추출",
+                    path: "노래 만들기 &rsaquo; 비트 만들기",
+                    memo: "수행 목표: 킥, 스네어 소스 5개 이상 아카이빙",
+                },
+                {
+                    id: "001",
+                    title: "리듬 배치하기",
+                    path: "노래 만들기 &rsaquo; 비트 만들기",
+                    memo: "수행 목표: 메인 하이햇 셔플 리듬 노팅 완료",
+                },
+            ];
+            let queueIndex = 0;
+            let chartInstance = null;
+
+            function switchView(viewName) {
+                document
+                    .querySelectorAll(".app-screen")
+                    .forEach((s) => s.classList.remove("active"));
+                document
+                    .querySelectorAll(".absolute.bottom-5 button")
+                    .forEach((b) => b.classList.remove("active-tab-indicator"));
+                document
+                    .querySelectorAll(".absolute.bottom-5 button")
+                    .forEach((b) => b.classList.add("text-[#17324d]/50"));
+
+                const targetScreen = document.getElementById(
+                    `screen-${viewName}`,
+                );
+                const targetNav = document.getElementById(`nav-${viewName}`);
+                const topTitle = document.getElementById("top-view-title");
+
+                targetScreen.classList.add("active");
+                targetNav.classList.add("active-tab-indicator");
+                targetNav.classList.remove("text-[#17324d]/50");
+                targetNav.classList.add("text-[#17324d]");
+
+                if (viewName === "focus") topTitle.innerText = "TODAY FOCUS";
+                if (viewName === "designer")
+                    topTitle.innerText = "계획 만들기";
+                if (viewName === "scheduler")
+                    topTitle.innerText = "계획 보기";
+
+                // 화면이 전환될 때 만료창은 언제나 닫아줌
+                closeTaskActionSheet();
+            }
+
+            function handleFocusComplete() {
+                queueIndex++;
+                const cardArea = document.getElementById("focus-card-area");
+                const progress = document.getElementById("focus-progress-bar");
+                const queueText = document.getElementById("focus-queue-text");
+
+                cardArea.style.transform = "translateY(-20px) scale(0.95)";
+                cardArea.style.opacity = "0";
+
+                setTimeout(() => {
+                    if (queueIndex < taskQueue.length) {
+                        document.getElementById("focus-task-title").innerText =
+                            taskQueue[queueIndex].title;
+                        document.querySelector("#focus-card-area p").innerText =
+                            taskQueue[queueIndex].memo;
+                        document.querySelector(
+                            "#focus-card-area span",
+                        ).innerText = taskQueue[queueIndex].path;
+
+                        progress.style.width = `${(queueIndex / taskQueue.length) * 100}%`;
+                        queueText.innerText = `이 시간대 계획된 조각 ${taskQueue.length}개 중 ${queueIndex + 1}번째 실행 중`;
+
+                        cardArea.style.transform = "translateY(0) scale(1)";
+                        cardArea.style.opacity = "1";
+
+                        chartInstance.data.datasets[0].data = [
+                            33 + queueIndex * 22,
+                            67 - queueIndex * 22,
+                        ];
+                        chartInstance.update();
+                    } else {
+                        progress.style.width = "100%";
+                        queueText.innerText = "모든 조각 소거 완료";
+                        cardArea.innerHTML = `
+            <div class="flex-1 flex flex-col items-center justify-center text-center py-12">
+              <span class="text-3xl">🎉</span>
+              <h4 class="text-lg font-bold text-[#17324d] mt-4">야간 세션 종료</h4>
+              <p class="text-xs text-[#17324d]/60 mt-1">배정된 인스턴스를 모두 소거하여<br>원본 꿈의 진척도가 상향 누적되었습니다.</p>
+            </div>
+          `;
+                        cardArea.style.transform = "translateY(0) scale(1)";
+                        cardArea.style.opacity = "1";
+
+                        chartInstance.data.datasets[0].data = [100, 0];
+                        chartInstance.update();
+                    }
+                }, 400);
+            }
+
+            function handleFocusPostpone() {
+                if (queueIndex >= taskQueue.length) return;
+                const cardArea = document.getElementById("focus-card-area");
+                cardArea.style.transform = "translateX(50px) scale(0.98)";
+                cardArea.style.opacity = "0.3";
+
+                setTimeout(() => {
+                    const currentItem = taskQueue.splice(queueIndex, 1)[0];
+                    taskQueue.push(currentItem);
+
+                    document.getElementById("focus-task-title").innerText =
+                        taskQueue[queueIndex].title;
+                    document.querySelector("#focus-card-area p").innerText =
+                        taskQueue[queueIndex].memo;
+                    document.querySelector("#focus-card-area span").innerText =
+                        taskQueue[queueIndex].path;
+
+                    cardArea.style.transform = "translateX(0) scale(1)";
+                    cardArea.style.opacity = "1";
+                }, 300);
+            }
+
+            function switchScheduleSegment(segment) {
+                const segments = ["day", "week", "month", "year"];
+                segments.forEach((s) => {
+                    document
+                        .getElementById(`seg-${s}`)
+                        .classList.remove("active-tab-indicator");
+                    document
+                        .getElementById(`seg-${s}`)
+                        .classList.remove("text-[#17324d]");
+                    document
+                        .getElementById(`seg-${s}`)
+                        .classList.add("text-[#17324d]/50");
+                });
+
+                const activeSeg = document.getElementById(`seg-${segment}`);
+                activeSeg.classList.add("active-tab-indicator");
+                activeSeg.classList.remove("text-[#17324d]/50");
+                activeSeg.classList.add("text-[#17324d]");
+
+                const contentArea = document.getElementById(
+                    "schedule-content-area",
+                );
+
+                if (segment === "day") {
+                    contentArea.innerHTML = `
+          <div class="space-y-3 w-full">
+            <div class="border-l-4 border-l-[#2d8fff] bg-white/60 p-3 rounded-r-xl">
+              <div class="flex justify-between text-[10px] font-bold text-[#2d8fff]"><span>09:00 - 12:00</span><span>오전 슬롯</span></div>
+              <p class="text-xs font-bold text-[#17324d] mt-1">개인 루틴 및 메일 점검</p>
+            </div>
+            <div class="border-l-4 border-l-[#0fb9c9] bg-white/60 p-3 rounded-r-xl">
+              <div class="flex justify-between text-[10px] font-bold text-[#0fb9c9]"><span>14:00 - 18:00</span><span>오후 슬롯</span></div>
+              <p class="text-xs font-bold text-[#17324d] mt-1">플래너 아키텍처 문서화 작업</p>
+            </div>
+          </div>
+        `;
+                } else if (segment === "week") {
+                    contentArea.innerHTML = `
+          <div class="grid grid-cols-7 gap-1 text-center font-mono text-[9px] font-bold text-[#17324d]/50 w-full">
+            <div>일</div><div>월</div><div>화</div><div class="text-[#17324d] bg-white/50 rounded p-0.5">수</div><div>목</div><div>금</div><div>토</div>
+          </div>
+          <div class="mt-4 space-y-2 w-full text-left">
+            <div class="bg-white/70 p-2.5 rounded-xl border border-white text-xs font-bold">수요일 야간 세션 (3개 조각 대기)</div>
+            <div class="bg-white/40 p-2.5 rounded-xl border border-white/40 text-xs text-[#17324d]/60 font-bold">금요일 주간 세션 (계획 수립 필요)</div>
+          </div>
+        `;
+                } else if (segment === "month") {
+                    contentArea.innerHTML = `
+          <div class="w-full font-bold text-center text-xs mb-2 text-[#17324d]">2026년 7월</div>
+          <div class="grid grid-cols-7 gap-1 text-center text-[8px] font-black opacity-40 mb-1">
+            <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
+          </div>
+          <div class="grid grid-cols-7 gap-1 w-full flex-1">
+            ${Array.from({ length: 31 }, (_, i) => `<div class="bg-white/40 rounded-lg p-1 text-[9px] font-bold text-right flex flex-col justify-between min-h-[44px] border border-white/20 ${i === 1 ? "border-[#2d8fff] bg-white/80" : ""}"><span>${i + 1}</span>${i === 1 ? '<span class="w-1.5 h-1.5 bg-[#17324d] rounded-full ml-auto"></span>' : ""}</div>`).join("")}
+          </div>
+        `;
+                } else if (segment === "year") {
+                    contentArea.innerHTML = `
+          <div class="space-y-3 w-full text-xs font-bold text-left">
+            <div class="bg-white/60 p-3 rounded-xl border border-white/80">
+              <p class="text-[10px] text-[#2d8fff]">2026 상반기 지향점</p>
+              <p class="text-sm mt-1 text-[#17324d]">음악 프로덕션 파이프라인 설계 완료</p>
+            </div>
+            <div class="bg-white/60 p-3 rounded-xl border border-white/80">
+              <p class="text-[10px] text-[#0fb9c9]">2026 하반기 지향점</p>
+              <p class="text-sm mt-1 text-[#17324d]">나만의 플래너 상용 앱 MVP 배포</p>
+            </div>
+          </div>
+        `;
+                }
+            }
+
+            function initMetricsChart() {
+                const ctx = document
+                    .getElementById("miniProgressChart")
+                    .getContext("2d");
+                chartInstance = new Chart(ctx, {
+                    type: "doughnut",
+                    data: {
+                        labels: ["완료된 리프", "남은 리프"],
+                        datasets: [
+                            {
+                                data: [33, 67],
+                                backgroundColor: [
+                                    "#0fb9c9",
+                                    "rgba(23, 50, 77, 0.08)",
+                                ],
+                                borderWidth: 0,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: "80%",
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false },
+                        },
+                    },
+                });
+            }
+
+            window.addEventListener("DOMContentLoaded", () => {
+                initMetricsChart();
+                renderTaskTree(); // 초기 트리 렌더링 호출
+            });
+        </script>
+    </body>
+</html>
