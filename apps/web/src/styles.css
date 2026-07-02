@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   color: #24364f;
   background: #d9f7ff;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Pretendard, "Noto Sans KR", "Malgun Gothic", sans-serif;
@@ -412,4 +412,278 @@ p { line-height: 1.6; }
   .today-hero { min-height: 180px; align-content: end; }
   .screen-stack { gap: 16px; }
   .day-board { grid-template-columns: 64px minmax(0, 1fr); }
+}
+
+.first-screen {
+  min-height: calc(100vh - 235px);
+  display: grid;
+  place-items: center;
+  padding: 4px 0 10px;
+}
+
+.first-phone {
+  position: relative;
+  width: min(100%, 390px);
+  min-height: 690px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 10px solid #17324d;
+  border-radius: 48px;
+  background: radial-gradient(circle at 18% 12%, rgba(112, 225, 231, 0.44), transparent 34%), radial-gradient(circle at 88% 86%, rgba(140, 199, 255, 0.42), transparent 38%), linear-gradient(145deg, rgba(245, 252, 255, 0.62), rgba(225, 240, 250, 0.34));
+  box-shadow: 0 30px 86px rgba(31, 91, 135, 0.24);
+}
+
+.first-phone::before {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  width: 108px;
+  height: 24px;
+  border-radius: 0 0 18px 18px;
+  background: #17324d;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.first-phone-top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  min-height: 86px;
+  padding: 42px 20px 12px;
+}
+
+.first-phone-top div { display: grid; gap: 3px; }
+.first-phone-top span { color: rgba(23, 50, 77, 0.45); font-size: 11px; font-weight: 950; letter-spacing: 0; }
+.first-phone-top strong { color: #17324d; font-size: 13px; font-weight: 950; }
+.first-phone-top i { width: 9px; height: 9px; border-radius: 999px; background: #0fb9c9; box-shadow: 0 0 0 6px rgba(15, 185, 201, 0.12); }
+
+.first-phone-body { min-height: 0; padding: 8px 16px 10px; overflow: hidden; }
+.first-panel { height: 100%; display: grid; align-content: center; gap: 14px; }
+
+.focus-progress { display: grid; gap: 8px; justify-items: center; color: rgba(23, 50, 77, 0.62); font-size: 13px; font-weight: 900; }
+.focus-progress div { width: 96px; height: 5px; overflow: hidden; border-radius: 999px; background: rgba(23, 50, 77, 0.10); }
+.focus-progress i { display: block; height: 100%; border-radius: inherit; background: #2d8fff; }
+
+.focus-card,
+.inbox-composer,
+.task-tree-preview,
+.schedule-stack,
+.week-preview,
+.month-preview,
+.year-preview {
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 24px 70px rgba(31, 91, 135, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(28px) saturate(135%);
+  -webkit-backdrop-filter: blur(28px) saturate(135%);
+}
+
+.focus-card { display: grid; gap: 18px; min-height: 330px; align-content: space-between; padding: 24px; }
+.focus-card > span { justify-self: start; min-height: 24px; display: inline-flex; align-items: center; padding: 0 9px; border-radius: 7px; color: #2d8fff; background: rgba(45, 143, 255, 0.10); font-size: 10px; font-weight: 950; }
+.focus-card h2 { max-width: 100%; color: #17324d; font-size: 25px; line-height: 1.16; }
+.focus-card p { color: rgba(23, 50, 77, 0.62); font-size: 12px; font-weight: 750; }
+
+.focus-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.focus-actions button:first-child { grid-column: 1 / -1; }
+.focus-actions button { min-height: 46px; border-radius: 12px; background: #17324d; box-shadow: 0 12px 24px rgba(23, 50, 77, 0.18); }
+.focus-actions .quiet-action { color: #17324d; background: rgba(255, 255, 255, 0.62); border: 1px solid rgba(23, 50, 77, 0.10); box-shadow: none; font-size: 12px; }
+.focus-actions .teal { color: #0a9dad; border-color: rgba(15, 185, 201, 0.20); }
+.focus-queue-line { color: rgba(23, 50, 77, 0.52); font-size: 11px; font-weight: 900; text-align: center; }
+
+.designer-panel { align-content: start; padding-top: 4px; }
+.inbox-composer { display: grid; gap: 10px; padding: 14px; border-radius: 20px; background: rgba(255, 255, 255, 0.42); }
+.inbox-composer label { color: rgba(23, 50, 77, 0.62); font-size: 12px; font-weight: 950; }
+.inbox-composer div { display: grid; grid-template-columns: minmax(0, 1fr) 66px; gap: 8px; }
+.inbox-composer input { min-height: 40px; border-radius: 12px; font-size: 12px; }
+.inbox-composer button { min-height: 40px; border-radius: 12px; background: #2d8fff; font-size: 12px; }
+
+.task-tree-preview { display: grid; gap: 7px; max-height: 430px; overflow: auto; padding: 14px; border-radius: 20px; background: rgba(255, 255, 255, 0.36); }
+.task-tree-preview button { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; min-height: 38px; border: 1px solid rgba(23, 50, 77, 0.08); border-radius: 12px; color: #17324d; background: rgba(255, 255, 255, 0.56); box-shadow: none; text-align: left; }
+.task-tree-preview span { color: #0fb9c9; font-size: 10px; font-weight: 950; }
+.task-tree-preview strong { min-width: 0; overflow: hidden; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
+.task-tree-preview em { color: rgba(23, 50, 77, 0.48); font-size: 10px; font-style: normal; }
+.task-tree-preview .new-inbox-item span { color: #b87945; }
+
+.scheduler-panel { align-content: start; padding-top: 4px; }
+.schedule-segments { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; padding: 4px; border: 1px solid rgba(255, 255, 255, 0.80); border-radius: 14px; background: rgba(255, 255, 255, 0.52); }
+.schedule-segments button { min-height: 34px; border-radius: 10px; color: rgba(23, 50, 77, 0.52); background: transparent; box-shadow: none; font-size: 11px; }
+.schedule-segments button.active { color: #17324d; background: rgba(23, 50, 77, 0.08); border: 1px solid rgba(23, 50, 77, 0.14); }
+
+.schedule-stack { display: grid; align-content: center; gap: 10px; min-height: 430px; padding: 16px; background: rgba(255, 255, 255, 0.32); }
+.schedule-block { display: grid; gap: 4px; min-height: 76px; padding: 12px; border-left: 4px solid #2d8fff; border-radius: 0 14px 14px 0; color: #17324d; background: rgba(255, 255, 255, 0.62); box-shadow: none; text-align: left; }
+.schedule-block:nth-child(even) { border-left-color: #0fb9c9; }
+.schedule-block span { color: #2d8fff; font-size: 10px; font-weight: 950; }
+.schedule-block em { color: rgba(23, 50, 77, 0.50); font-size: 10px; font-style: normal; }
+.schedule-block.empty { border-left-color: #17324d; }
+
+.week-preview { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; min-height: 260px; align-content: center; padding: 14px; }
+.week-preview button,
+.month-preview button,
+.year-preview button { color: #17324d; background: rgba(255, 255, 255, 0.48); border: 1px solid rgba(255, 255, 255, 0.52); box-shadow: none; }
+.week-preview button { display: grid; min-height: 74px; border-radius: 14px; }
+.week-preview button.active,
+.month-preview button.active,
+.year-preview button.active { color: #fff; background: linear-gradient(135deg, #35c8e7, #6d91ff); }
+.week-preview span { font-size: 11px; }
+.week-preview strong { font-size: 18px; }
+
+.month-preview { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; min-height: 430px; align-content: center; padding: 14px; }
+.month-preview button { min-height: 40px; border-radius: 10px; font-size: 11px; }
+
+.year-preview { display: grid; gap: 10px; min-height: 360px; align-content: center; padding: 16px; }
+.year-preview button { display: grid; gap: 4px; min-height: 76px; border-radius: 16px; }
+.year-preview span { font-size: 11px; }
+.year-preview strong { font-size: 14px; }
+
+.first-triad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin: 0 14px 14px; padding: 8px; border: 1px solid rgba(255, 255, 255, 0.86); border-radius: 22px; background: rgba(255, 255, 255, 0.74); box-shadow: 0 20px 52px rgba(31, 91, 135, 0.16); backdrop-filter: blur(28px) saturate(135%); -webkit-backdrop-filter: blur(28px) saturate(135%); }
+.first-triad button { display: grid; gap: 3px; min-height: 52px; border-radius: 14px; color: rgba(23, 50, 77, 0.52); background: transparent; box-shadow: none; font-size: 10px; }
+.first-triad button.active { color: #17324d; background: rgba(23, 50, 77, 0.08); border: 1px solid rgba(23, 50, 77, 0.14); }
+.first-triad span { font-size: 10px; }
+.first-triad strong { font-size: 12px; }
+
+/* PWA first screen: the app shell itself, not a device mockup. */
+.first-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: stretch center;
+  padding: 0;
+  background: linear-gradient(180deg, #d8f3ff 0%, #edf7ff 100%);
+}
+
+.first-phone {
+  width: min(100vw, 430px);
+  min-height: 100vh;
+  min-height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: radial-gradient(circle at 50% 25%, rgba(183, 231, 249, 0.72), transparent 42%), linear-gradient(180deg, #d8f3ff 0%, #edf7ff 100%);
+}
+
+.first-phone::before { display: none; }
+
+.first-phone-top {
+  min-height: 78px;
+  padding: max(30px, env(safe-area-inset-top)) 14px 8px;
+}
+
+.first-phone-top strong { display: none; }
+.first-phone-top span {
+  color: rgba(44, 76, 105, 0.54);
+  font-size: 12px;
+  letter-spacing: 1.8px;
+}
+.first-phone-top i {
+  width: 8px;
+  height: 8px;
+  box-shadow: none;
+}
+
+.first-phone-body {
+  padding: 42px 9px 124px;
+}
+
+.first-panel {
+  align-content: start;
+  gap: 22px;
+}
+
+.focus-progress {
+  gap: 9px;
+  color: #557693;
+  font-size: 13px;
+}
+
+.focus-progress div {
+  width: 100px;
+  height: 4px;
+  background: rgba(93, 120, 145, 0.22);
+}
+
+.focus-card {
+  min-height: 340px;
+  border-radius: 24px;
+  padding: 31px 25px 24px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 22px 54px rgba(91, 127, 157, 0.20);
+}
+
+.focus-card > span {
+  min-height: 25px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: #2d8fff;
+  font-size: 10px;
+}
+
+.focus-card h2 {
+  margin-top: 1px;
+  font-size: 27px;
+  line-height: 1.12;
+}
+
+.focus-card p {
+  margin-top: -10px;
+  color: #65809a;
+  font-size: 12px;
+}
+
+.focus-actions {
+  margin-top: 46px;
+}
+
+.focus-actions button {
+  min-height: 50px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.focus-actions .quiet-action {
+  min-height: 42px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.focus-queue-line {
+  color: #7890a6;
+  font-size: 11px;
+}
+
+.first-triad {
+  position: fixed;
+  right: max(10px, env(safe-area-inset-right));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  left: max(10px, env(safe-area-inset-left));
+  max-width: 410px;
+  margin: 0 auto;
+  padding: 7px 8px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 12px 34px rgba(91, 127, 157, 0.18);
+}
+
+.first-triad button {
+  min-height: 50px;
+  border-radius: 10px;
+  color: #7890a6;
+}
+
+.first-triad button.active {
+  color: #17324d;
+  background: rgba(234, 241, 247, 0.90);
+  border: 1px solid rgba(99, 122, 144, 0.22);
+}
+
+.first-triad span { font-size: 18px; line-height: 1; }
+.first-triad strong { font-size: 10px; }
+
+@media (display-mode: standalone) {
+  body { overscroll-behavior: none; }
 }

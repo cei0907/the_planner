@@ -1,4 +1,4 @@
-﻿import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import {
   TASK_MAX_LEVEL,
   type CreatePlanRequest,
@@ -26,6 +26,7 @@ import {
   yearRange,
 } from "./date";
 import { AppLayout, type PrimaryTab } from "./layout";
+import { FirstScreen } from "./FirstScreen";
 import type { ApiState, PlanFormState, SupplyFormState, TaskFormState } from "./types";
 
 type PlannerView = "month" | "week" | "day";
@@ -734,6 +735,17 @@ export function App() {
     }
   }
 
+  if (activeTab === "today") {
+    return (
+      <FirstScreen
+        selectedDate={selectedDate}
+        plans={plans}
+        tasks={tasks}
+        onTogglePlanTask={handleTogglePlanTask}
+        onTabChange={setActiveTab}
+      />
+    );
+  }
   return (
     <AppLayout
       status={status}
@@ -744,7 +756,6 @@ export function App() {
       onDateChange={setSelectedDate}
       onTabChange={setActiveTab}
     >
-      {activeTab === "today" ? <TodayPage selectedDate={selectedDate} plans={plans} onTogglePlanTask={handleTogglePlanTask} onTimeSlotSelect={handleTimeSlotSelect} /> : null}
 
       {activeTab === "planner" ? (
         <div className="screen-stack">
@@ -788,5 +799,4 @@ export function App() {
     </AppLayout>
   );
 }
-
 
